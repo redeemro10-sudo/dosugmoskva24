@@ -308,6 +308,31 @@ function _seo_random_noun_gen(int $seed = 0): string
     return $seed > 0 ? $nouns[((int) floor($seed / 3)) % 3] : $nouns[array_rand($nouns)];
 }
 
+/** Винительный падеж ед.ч. для жен. национальности (русская→русскую, армянка→армянку). */
+function _seo_inflect_nationality_acc(string $name): string
+{
+    $name = trim($name);
+    if ($name === '') return $name;
+    $low = function_exists('mb_strtolower') ? mb_strtolower($name, 'UTF-8') : strtolower($name);
+    if (preg_match('~ая$~u', $low)) return mb_substr($name, 0, -2, 'UTF-8') . 'ую';
+    if (preg_match('~яя$~u', $low)) return mb_substr($name, 0, -2, 'UTF-8') . 'юю';
+    if (preg_match('~а$~u',  $low)) return mb_substr($name, 0, -1, 'UTF-8') . 'у';
+    return $name;
+}
+
+/** Родительный падеж мн.ч. для жен. национальности (русская→русских, армянка→армянок, узбечка→узбечек). */
+function _seo_inflect_nationality_gen(string $name): string
+{
+    $name = trim($name);
+    if ($name === '') return $name;
+    $low = function_exists('mb_strtolower') ? mb_strtolower($name, 'UTF-8') : strtolower($name);
+    if (preg_match('~ая$~u', $low)) return mb_substr($name, 0, -2, 'UTF-8') . 'их';
+    if (preg_match('~([чшжщ])ка$~u', $low, $m)) return mb_substr($name, 0, -2, 'UTF-8') . 'ек';
+    if (preg_match('~ка$~u', $low)) return mb_substr($name, 0, -2, 'UTF-8') . 'ок';
+    if (preg_match('~а$~u',  $low)) return mb_substr($name, 0, -1, 'UTF-8');
+    return $name;
+}
+
 function _seo_plural_anket(int $n): string
 {
     $n100 = abs($n) % 100;
@@ -348,7 +373,11 @@ function _seo_build_landing_title_by_kind(string $kind, string $cat_name, string
     }
 
     if ($kind === 'nationality') {
-        return "Проститутки национальности {$cat_name} в Москве — анкеты с фото и ценами";
+        $term_id = (int) ($extra['term_id'] ?? 0);
+        [$verb, $noun] = _seo_random_phrase_vin($term_id);
+        $nat_acc = _seo_inflect_nationality_acc($cat_name);
+        $price_part = $price_txt !== '' ? " от {$price_txt} рублей" : '';
+        return "Проститутки {$cat_name} Москвы — {$verb} {$noun} {$nat_acc}{$price_part}";
     }
 
     if ($kind === 'price') {
@@ -389,7 +418,12 @@ function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array 
     }
 
     if ($kind === 'nationality') {
-        return "Актуальный каталог проституток в Москве: анкеты с фото, ценами и фильтрами по национальности «{$cat_name}».";
+        $term_id = (int) ($extra['term_id'] ?? 0);
+        $count   = (int) ($extra['count'] ?? 0);
+        [$verb, $noun] = _seo_random_phrase_vin($term_id);
+        $nat_gen = _seo_inflect_nationality_gen($cat_name);
+        $count_part = $count > 0 ? " {$count} " . _seo_plural_anket($count) . ' доступно' : '';
+        return "{$verb} {$nat_gen} в Москве,{$count_part} | анкеты проституток {$nat_gen} с проверенными фото | выезд прием 24/7";
     }
 
     if ($kind === 'price') {
@@ -520,7 +554,7 @@ function _seo_build_title(array $ctx): string
                 $price_num = _seo_min_price_num_by_term($qo, $tax);
                 $price_txt = $price_num > 0 ? number_format_i18n($price_num) : '';
                 $extra = [];
-                if ($kind === 'metro' || $kind === 'rajon') {
+                if ($kind === 'metro' || $kind === 'rajon' || $kind === 'nationality') {
                     $extra['term_id'] = (int) $qo->term_id;
                     $extra['count']   = _seo_count_models_by_term($qo, $tax);
                 }
@@ -657,7 +691,7 @@ function _seo_build_descr(array $ctx): string
             if ($kind !== '') {
                 $cat_name = _seo_decode_entities((string) $qo->name);
                 $extra = [];
-                if ($kind === 'metro' || $kind === 'rajon') {
+                if ($kind === 'metro' || $kind === 'rajon' || $kind === 'nationality') {
                     $price_num = _seo_min_price_num_by_term($qo, (string) $qo->taxonomy);
                     $extra['term_id']   = (int) $qo->term_id;
                     $extra['price_txt'] = $price_num > 0 ? number_format_i18n($price_num) : '';

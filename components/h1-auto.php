@@ -106,6 +106,8 @@ if ($post_type === 'models') {
     $context = 'rajon';
 } elseif ($post_type === 'uslugi' || $taxonomy === 'uslugi' || $taxonomy === 'uslugi_tax') {
     $context = 'uslugi';
+} elseif ($post_type === 'nacionalnost' || $taxonomy === 'nationalnost_tax') {
+    $context = 'nationalnost';
 }
 
 $h1_from_record = '';
@@ -169,6 +171,13 @@ if ($h1 === '' && $context === 'models' && $title_piece !== '') {
 
     $h1 = "{$title_piece} в Москве";
     $h2 = "Анкеты проституток с услугой {$title_piece}";
+} elseif ($h1 === '' && $context === 'nationalnost' && $title_piece !== '') {
+
+    $nat_gen = function_exists('_seo_inflect_nationality_gen')
+        ? _seo_inflect_nationality_gen($title_piece)
+        : $title_piece;
+    $h1 = "Проститутки {$title_piece} в Москве";
+    $h2 = "Анкеты проституток {$nat_gen}";
 } else {
 
     if (function_exists('get_field') && $id) {
