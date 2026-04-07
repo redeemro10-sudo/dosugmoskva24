@@ -152,8 +152,8 @@ $price_out_2h    = $get_p('price_outcall_2_hours', $price_out_1h ? $price_out_1h
 $price_out_night = $get_p('price_outcall_night', $price_out_1h ? $price_out_1h * 8 : 0);
 
 $about     = function_exists('get_field') ? get_field('description', $id) : '';
-if (trim(wp_strip_all_tags((string) $about)) === '' && function_exists('kyzdarki_generate_model_auto_about')) {
-    $about = kyzdarki_generate_model_auto_about([
+if (trim(wp_strip_all_tags((string) $about)) === '' && function_exists('dosugmoskva24_generate_model_auto_about')) {
+    $about = dosugmoskva24_generate_model_auto_about([
         'post_id' => $id,
         'name' => $name,
         'city' => 'Москва',
@@ -986,8 +986,47 @@ $lb_items = array_merge(
                                     </svg>
                                 <?php endif; ?>
                             </span>
-                            <?php $service_link = get_term_link($term); ?>
-                            <?php if (!is_wp_error($service_link)) : ?>
+                            <?php
+                                $service_link = get_term_link($term);
+                                $service_link_is_valid = !is_wp_error($service_link);
+
+                                if ($service_link_is_valid) {
+                                    $service_path = (string) parse_url((string) $service_link, PHP_URL_PATH);
+                                    $decoded_path = rawurldecode($service_path);
+
+                                    // Не выводим ссылки с кириллицей/percent-encoding в slug.
+                                    $has_encoded_bytes = (bool) preg_match('~%[0-9a-f]{2}~i', $service_path);
+                                    $has_non_ascii = (bool) preg_match('~[^\x00-\x7F]~u', $decoded_path);
+                                    if ($has_encoded_bytes || $has_non_ascii) {
+                                        $service_link_is_valid = false;
+                                    }
+                                }
+
+                                if (!$service_link_is_valid) {
+                                    $pretty_slug_source = $service_slug !== ''
+                                        ? rawurldecode((string) $service_slug)
+                                        : (string) $service_name;
+                                    $pretty_slug = function_exists('dosugmoskva24_slugify_latin')
+                                        ? dosugmoskva24_slugify_latin($pretty_slug_source)
+                                        : '';
+
+                                    if ($pretty_slug === '' && $service_name !== '') {
+                                        $pretty_slug = function_exists('dosugmoskva24_slugify_latin')
+                                            ? dosugmoskva24_slugify_latin((string) $service_name)
+                                            : '';
+                                    }
+
+                                    if ($pretty_slug === '') {
+                                        $pretty_slug = sanitize_title($pretty_slug_source);
+                                    }
+
+                                    if ($pretty_slug !== '' && strpos($pretty_slug, '%') === false) {
+                                        $service_link = home_url('/services/' . $pretty_slug . '/');
+                                        $service_link_is_valid = true;
+                                    }
+                                }
+                            ?>
+                            <?php if ($service_link_is_valid) : ?>
                                 <a class="service-name hover:underline" href="<?php echo esc_url($service_link); ?>"><?php echo esc_html($service_name); ?></a>
                             <?php else : ?>
                                 <span class="service-name"><?php echo esc_html($service_name); ?></span>

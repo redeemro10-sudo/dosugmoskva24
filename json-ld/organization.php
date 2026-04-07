@@ -15,22 +15,18 @@ $whatsapp    = trim((string) get_theme_mod('contact_whatsapp'));       // зап
 $email_mod   = trim((string) get_theme_mod('contact_email'));
 
 // Телефон: берём из кастомайзера, иначе запасной номер по умолчанию
-$org_phone = $phone_mod ?: $whatsapp ?: '+77275467994';
+$org_phone = $phone_mod ?: $whatsapp ?: '+79874684644';
 
 // E-mail: берём из кастомайзера, иначе admin@<домен сайта>
 if ($email_mod) {
     $org_email = $email_mod;
 } else {
-    $host      = parse_url($org_url, PHP_URL_HOST) ?: 'escortalmaty.kz';
+    $host      = parse_url($org_url, PHP_URL_HOST) ?: 'dosugmoskva24.com';
     $org_email = 'admin@' . $host;
 }
 
-// География: Казахстан / Москва
+// География: Россия / Москва
 $area_served = [
-    [
-        '@type' => 'Country',
-        'name'  => 'Казахстан',
-    ],
     [
         '@type' => 'City',
         'name'  => 'Москва',
@@ -48,7 +44,7 @@ $organization = [
     'description'  => $org_description,
     'contactPoint' => [
         '@type'       => 'ContactPoint',
-        'telephone'   => +77275467994,
+        'telephone'   => $org_phone,
         'contactType' => 'Customer Service',
         'email'       => $org_email,
         'areaServed'  => $area_served,

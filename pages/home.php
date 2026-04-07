@@ -167,8 +167,8 @@ $p_after_h1_is_auto = false;
 $auto_links_block = '';
 $custom_h1_override = '';
 
-if (function_exists('kyzdarki_generate_landing_auto_text')) {
-    $auto_text = kyzdarki_generate_landing_auto_text([
+if (function_exists('dosugmoskva24_generate_landing_auto_text')) {
+    $auto_text = dosugmoskva24_generate_landing_auto_text([
         'post_id' => $post_id,
         'post_type' => (string) get_post_type($post_id),
         'page_slug' => $post_id ? (string) get_post_field('post_name', $post_id) : '',
@@ -192,8 +192,8 @@ if (function_exists('kyzdarki_generate_landing_auto_text')) {
     }
 }
 
-if ($paged === 1 && $p_after_h1_manual === '' && function_exists('kyzdarki_generate_landing_links_block')) {
-    $auto_links_block = kyzdarki_generate_landing_links_block([
+if ($paged === 1 && $p_after_h1_manual === '' && function_exists('dosugmoskva24_generate_landing_links_block')) {
+    $auto_links_block = dosugmoskva24_generate_landing_links_block([
         'post_id' => $post_id,
         'post_type' => (string) get_post_type($post_id),
         'page_slug' => $post_id ? (string) get_post_field('post_name', $post_id) : '',
@@ -209,32 +209,32 @@ if ($is_district_context) {
     $district_term = get_term($district_term_id, 'rayonu_tax');
 
     if ($district_term instanceof WP_Term && !is_wp_error($district_term)) {
-        $district_name = function_exists('kyzdarki_auto_text_clean')
-            ? kyzdarki_auto_text_clean((string) $district_term->name)
+        $district_name = function_exists('dosugmoskva24_auto_text_clean')
+            ? dosugmoskva24_auto_text_clean((string) $district_term->name)
             : trim(wp_strip_all_tags((string) $district_term->name));
 
         if ($district_name !== '') {
             $district_name_safe = esc_html($district_name);
 
             $models_count = isset($auto_text['models_count']) ? (int) $auto_text['models_count'] : 0;
-            if ($models_count <= 0 && function_exists('kyzdarki_auto_text_count_models')) {
-                $models_count = kyzdarki_auto_text_count_models($base_tax);
+            if ($models_count <= 0 && function_exists('dosugmoskva24_auto_text_count_models')) {
+                $models_count = dosugmoskva24_auto_text_count_models($base_tax);
             }
             $models_count_text = number_format_i18n(max(0, $models_count));
 
             $model_ids_at_district = [];
-            if (function_exists('kyzdarki_auto_text_get_model_ids_by_terms')) {
-                $model_ids_at_district = kyzdarki_auto_text_get_model_ids_by_terms('rayonu_tax', [$district_term_id], 420);
+            if (function_exists('dosugmoskva24_auto_text_get_model_ids_by_terms')) {
+                $model_ids_at_district = dosugmoskva24_auto_text_get_model_ids_by_terms('rayonu_tax', [$district_term_id], 420);
             }
 
             $station_terms = [];
             if (
                 !empty($model_ids_at_district)
-                && function_exists('kyzdarki_auto_text_get_term_rows_by_models')
-                && function_exists('kyzdarki_auto_text_terms_from_rows')
+                && function_exists('dosugmoskva24_auto_text_get_term_rows_by_models')
+                && function_exists('dosugmoskva24_auto_text_terms_from_rows')
             ) {
-                $metro_rows = kyzdarki_auto_text_get_term_rows_by_models($model_ids_at_district, 'metro_tax', [], 3);
-                $station_terms = kyzdarki_auto_text_terms_from_rows($metro_rows);
+                $metro_rows = dosugmoskva24_auto_text_get_term_rows_by_models($model_ids_at_district, 'metro_tax', [], 3);
+                $station_terms = dosugmoskva24_auto_text_terms_from_rows($metro_rows);
             }
 
             if (count($station_terms) < 3) {
@@ -272,8 +272,8 @@ if ($is_district_context) {
                 if (!$station_term instanceof WP_Term) {
                     continue;
                 }
-                $name = function_exists('kyzdarki_auto_text_clean')
-                    ? kyzdarki_auto_text_clean((string) $station_term->name)
+                $name = function_exists('dosugmoskva24_auto_text_clean')
+                    ? dosugmoskva24_auto_text_clean((string) $station_term->name)
                     : trim(wp_strip_all_tags((string) $station_term->name));
                 if ($name === '') {
                     continue;
@@ -296,8 +296,8 @@ if ($is_district_context) {
                 if (!$station_term instanceof WP_Term) {
                     continue;
                 }
-                $station_name_for_h1 = function_exists('kyzdarki_auto_text_clean')
-                    ? kyzdarki_auto_text_clean((string) $station_term->name)
+                $station_name_for_h1 = function_exists('dosugmoskva24_auto_text_clean')
+                    ? dosugmoskva24_auto_text_clean((string) $station_term->name)
                     : trim(wp_strip_all_tags((string) $station_term->name));
                 if ($station_name_for_h1 !== '') {
                     $h1_station_name = $station_name_for_h1;
@@ -372,9 +372,9 @@ if ($is_district_context) {
             $neighbor_terms = [];
             if (
                 !empty($station_terms)
-                && function_exists('kyzdarki_auto_text_get_model_ids_by_terms')
-                && function_exists('kyzdarki_auto_text_get_term_rows_by_models')
-                && function_exists('kyzdarki_auto_text_terms_from_rows')
+                && function_exists('dosugmoskva24_auto_text_get_model_ids_by_terms')
+                && function_exists('dosugmoskva24_auto_text_get_term_rows_by_models')
+                && function_exists('dosugmoskva24_auto_text_terms_from_rows')
             ) {
                 $station_ids = [];
                 foreach ($station_terms as $station_term) {
@@ -383,14 +383,14 @@ if ($is_district_context) {
                     }
                 }
                 if (!empty($station_ids)) {
-                    $model_ids_by_stations = kyzdarki_auto_text_get_model_ids_by_terms('metro_tax', $station_ids, 560);
-                    $neighbor_rows = kyzdarki_auto_text_get_term_rows_by_models(
+                    $model_ids_by_stations = dosugmoskva24_auto_text_get_model_ids_by_terms('metro_tax', $station_ids, 560);
+                    $neighbor_rows = dosugmoskva24_auto_text_get_term_rows_by_models(
                         $model_ids_by_stations,
                         'rayonu_tax',
                         [$district_term_id],
                         3
                     );
-                    $neighbor_terms = kyzdarki_auto_text_terms_from_rows($neighbor_rows);
+                    $neighbor_terms = dosugmoskva24_auto_text_terms_from_rows($neighbor_rows);
                 }
             }
 
@@ -430,8 +430,8 @@ if ($is_district_context) {
                 if (!$neighbor_term instanceof WP_Term) {
                     continue;
                 }
-                $neighbor_name = function_exists('kyzdarki_auto_text_clean')
-                    ? kyzdarki_auto_text_clean((string) $neighbor_term->name)
+                $neighbor_name = function_exists('dosugmoskva24_auto_text_clean')
+                    ? dosugmoskva24_auto_text_clean((string) $neighbor_term->name)
                     : trim(wp_strip_all_tags((string) $neighbor_term->name));
                 if ($neighbor_name === '') {
                     continue;
@@ -479,16 +479,16 @@ if ($is_metro_context) {
     $station_term = get_term($station_term_id, 'metro_tax');
 
     if ($station_term instanceof WP_Term && !is_wp_error($station_term)) {
-        $station_name = function_exists('kyzdarki_auto_text_clean')
-            ? kyzdarki_auto_text_clean((string) $station_term->name)
+        $station_name = function_exists('dosugmoskva24_auto_text_clean')
+            ? dosugmoskva24_auto_text_clean((string) $station_term->name)
             : trim(wp_strip_all_tags((string) $station_term->name));
 
         if ($station_name !== '') {
             $station_name_safe = esc_html($station_name);
 
             $models_count = isset($auto_text['models_count']) ? (int) $auto_text['models_count'] : 0;
-            if ($models_count <= 0 && function_exists('kyzdarki_auto_text_count_models')) {
-                $models_count = kyzdarki_auto_text_count_models($base_tax);
+            if ($models_count <= 0 && function_exists('dosugmoskva24_auto_text_count_models')) {
+                $models_count = dosugmoskva24_auto_text_count_models($base_tax);
             }
             $models_count_text = number_format_i18n(max(0, $models_count));
 
@@ -503,8 +503,8 @@ if ($is_metro_context) {
             $line_meta_keys = ['line_name', 'metro_line', 'line', 'vetka', 'line_title'];
             foreach ($line_meta_keys as $line_meta_key) {
                 $line_raw = (string) get_term_meta($station_term_id, $line_meta_key, true);
-                $line_raw = function_exists('kyzdarki_auto_text_clean')
-                    ? kyzdarki_auto_text_clean($line_raw)
+                $line_raw = function_exists('dosugmoskva24_auto_text_clean')
+                    ? dosugmoskva24_auto_text_clean($line_raw)
                     : trim(wp_strip_all_tags($line_raw));
                 if ($line_raw !== '') {
                     $line_name = $line_raw;
@@ -515,8 +515,8 @@ if ($is_metro_context) {
             if ($line_name === '' && $station_parent_id > 0) {
                 $parent_term = get_term($station_parent_id, 'metro_tax');
                 if ($parent_term instanceof WP_Term && !is_wp_error($parent_term)) {
-                    $line_name = function_exists('kyzdarki_auto_text_clean')
-                        ? kyzdarki_auto_text_clean((string) $parent_term->name)
+                    $line_name = function_exists('dosugmoskva24_auto_text_clean')
+                        ? dosugmoskva24_auto_text_clean((string) $parent_term->name)
                         : trim(wp_strip_all_tags((string) $parent_term->name));
                 }
             }
@@ -526,18 +526,18 @@ if ($is_metro_context) {
             $line_name_safe = esc_html($line_name);
 
             $model_ids_at_station = [];
-            if (function_exists('kyzdarki_auto_text_get_model_ids_by_terms')) {
-                $model_ids_at_station = kyzdarki_auto_text_get_model_ids_by_terms('metro_tax', [$station_term_id], 420);
+            if (function_exists('dosugmoskva24_auto_text_get_model_ids_by_terms')) {
+                $model_ids_at_station = dosugmoskva24_auto_text_get_model_ids_by_terms('metro_tax', [$station_term_id], 420);
             }
 
             $district_terms = [];
             if (
                 !empty($model_ids_at_station)
-                && function_exists('kyzdarki_auto_text_get_term_rows_by_models')
-                && function_exists('kyzdarki_auto_text_terms_from_rows')
+                && function_exists('dosugmoskva24_auto_text_get_term_rows_by_models')
+                && function_exists('dosugmoskva24_auto_text_terms_from_rows')
             ) {
-                $district_rows = kyzdarki_auto_text_get_term_rows_by_models($model_ids_at_station, 'rayonu_tax', [], 3);
-                $district_terms = kyzdarki_auto_text_terms_from_rows($district_rows);
+                $district_rows = dosugmoskva24_auto_text_get_term_rows_by_models($model_ids_at_station, 'rayonu_tax', [], 3);
+                $district_terms = dosugmoskva24_auto_text_terms_from_rows($district_rows);
             }
             if (empty($district_terms)) {
                 $district_fallback = get_terms([
@@ -558,8 +558,8 @@ if ($is_metro_context) {
             $district_link = esc_html($district_label);
             if (!empty($district_terms) && $district_terms[0] instanceof WP_Term) {
                 $main_district = $district_terms[0];
-                $district_name_raw = function_exists('kyzdarki_auto_text_clean')
-                    ? kyzdarki_auto_text_clean((string) $main_district->name)
+                $district_name_raw = function_exists('dosugmoskva24_auto_text_clean')
+                    ? dosugmoskva24_auto_text_clean((string) $main_district->name)
                     : trim(wp_strip_all_tags((string) $main_district->name));
                 if ($district_name_raw !== '') {
                     $district_label = $district_name_raw;
@@ -662,9 +662,9 @@ if ($is_metro_context) {
             if (
                 count($neighbor_terms) < 3
                 && !empty($district_terms)
-                && function_exists('kyzdarki_auto_text_get_model_ids_by_terms')
-                && function_exists('kyzdarki_auto_text_get_term_rows_by_models')
-                && function_exists('kyzdarki_auto_text_terms_from_rows')
+                && function_exists('dosugmoskva24_auto_text_get_model_ids_by_terms')
+                && function_exists('dosugmoskva24_auto_text_get_term_rows_by_models')
+                && function_exists('dosugmoskva24_auto_text_terms_from_rows')
             ) {
                 $district_ids = [];
                 foreach ($district_terms as $district_term) {
@@ -673,14 +673,14 @@ if ($is_metro_context) {
                     }
                 }
                 if (!empty($district_ids)) {
-                    $model_ids_by_district = kyzdarki_auto_text_get_model_ids_by_terms('rayonu_tax', $district_ids, 560);
-                    $near_metro_rows = kyzdarki_auto_text_get_term_rows_by_models(
+                    $model_ids_by_district = dosugmoskva24_auto_text_get_model_ids_by_terms('rayonu_tax', $district_ids, 560);
+                    $near_metro_rows = dosugmoskva24_auto_text_get_term_rows_by_models(
                         $model_ids_by_district,
                         'metro_tax',
                         [$station_term_id],
                         8
                     );
-                    $near_metro_terms = kyzdarki_auto_text_terms_from_rows($near_metro_rows);
+                    $near_metro_terms = dosugmoskva24_auto_text_terms_from_rows($near_metro_rows);
                     foreach ($near_metro_terms as $near_metro_term) {
                         if (!$near_metro_term instanceof WP_Term) {
                             continue;
@@ -730,8 +730,8 @@ if ($is_metro_context) {
                 if (!$neighbor_term instanceof WP_Term) {
                     continue;
                 }
-                $neighbor_name = function_exists('kyzdarki_auto_text_clean')
-                    ? kyzdarki_auto_text_clean((string) $neighbor_term->name)
+                $neighbor_name = function_exists('dosugmoskva24_auto_text_clean')
+                    ? dosugmoskva24_auto_text_clean((string) $neighbor_term->name)
                     : trim(wp_strip_all_tags((string) $neighbor_term->name));
                 if ($neighbor_name === '') {
                     continue;
@@ -778,22 +778,22 @@ if ($is_service_context) {
     $service_term = get_term($service_term_id, 'uslugi_tax');
 
     if ($service_term instanceof WP_Term && !is_wp_error($service_term)) {
-        $service_name = function_exists('kyzdarki_auto_text_clean')
-            ? kyzdarki_auto_text_clean((string) $service_term->name)
+        $service_name = function_exists('dosugmoskva24_auto_text_clean')
+            ? dosugmoskva24_auto_text_clean((string) $service_term->name)
             : trim(wp_strip_all_tags((string) $service_term->name));
 
         if ($service_name !== '') {
             $service_name_safe = esc_html($service_name);
 
             $service_models_count = isset($auto_text['models_count']) ? (int) $auto_text['models_count'] : 0;
-            if ($service_models_count <= 0 && function_exists('kyzdarki_auto_text_count_models')) {
-                $service_models_count = kyzdarki_auto_text_count_models($base_tax);
+            if ($service_models_count <= 0 && function_exists('dosugmoskva24_auto_text_count_models')) {
+                $service_models_count = dosugmoskva24_auto_text_count_models($base_tax);
             }
             $service_count_text = 'актуальные анкеты';
             if ($service_models_count > 0) {
                 $service_count_label = number_format_i18n($service_models_count);
-                $service_count_word = function_exists('kyzdarki_auto_text_plural')
-                    ? kyzdarki_auto_text_plural($service_models_count, 'анкета', 'анкеты', 'анкет')
+                $service_count_word = function_exists('dosugmoskva24_auto_text_plural')
+                    ? dosugmoskva24_auto_text_plural($service_models_count, 'анкета', 'анкеты', 'анкет')
                     : 'анкет';
                 $service_count_text = $service_count_label . ' ' . $service_count_word;
             }
@@ -877,18 +877,18 @@ if (!$is_incall_page && $qo instanceof WP_Post) {
 
 if ($is_incall_page) {
     $incall_models_count = 0;
-    if (function_exists('kyzdarki_auto_text_count_models_by_meta')) {
-        $incall_models_count = kyzdarki_auto_text_count_models_by_meta(['price', 'price_2_hours', 'price_night']);
+    if (function_exists('dosugmoskva24_auto_text_count_models_by_meta')) {
+        $incall_models_count = dosugmoskva24_auto_text_count_models_by_meta(['price', 'price_2_hours', 'price_night']);
     }
-    if ($incall_models_count <= 0 && function_exists('kyzdarki_auto_text_count_models')) {
-        $incall_models_count = kyzdarki_auto_text_count_models([]);
+    if ($incall_models_count <= 0 && function_exists('dosugmoskva24_auto_text_count_models')) {
+        $incall_models_count = dosugmoskva24_auto_text_count_models([]);
     }
 
     $incall_count_text = 'актуальные анкеты';
     if ($incall_models_count > 0) {
         $incall_count_label = number_format_i18n($incall_models_count);
-        $incall_count_word = function_exists('kyzdarki_auto_text_plural')
-            ? kyzdarki_auto_text_plural($incall_models_count, 'анкета', 'анкеты', 'анкет')
+        $incall_count_word = function_exists('dosugmoskva24_auto_text_plural')
+            ? dosugmoskva24_auto_text_plural($incall_models_count, 'анкета', 'анкеты', 'анкет')
             : 'анкет';
         $incall_count_text = $incall_count_label . ' ' . $incall_count_word;
     }
@@ -1033,7 +1033,7 @@ wp_localize_script('models-filter-app', 'SiteModelsFilter', [
         </h1>
 
 
-        <?php if ($p_after_h1 && $paged === 1):
+        <?php if ($p_after_h1 && $paged === 1 && !$p_after_h1_is_auto):
             $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
             $is_bot = (bool) preg_match('/bot|crawl|spider|slurp|mediapartners-google|bingpreview|duckduckbot|baiduspider|yandex|ahrefs|semrush|screaming\s?frog|facebookexternalhit|telegrambot/i', $ua);
             $text_html = $p_after_h1_is_auto
@@ -1193,6 +1193,22 @@ wp_localize_script('models-filter-app', 'SiteModelsFilter', [
 
 
     <?php
+    // For taxonomy landings keep only manual SEO texts from admin fields.
+// Auto-generated template sections are disabled to avoid template content on listing pages.
+    if (is_tax()) {
+        $manual_p_under_h2 = function_exists('get_field') ? (get_field('p_title', $post_id) ?: '') : '';
+        $manual_content    = function_exists('get_field') ? (get_field('content', $post_id) ?: '') : '';
+        $manual_text_block = function_exists('get_field') ? (get_field('text_block', $post_id) ?: '') : '';
+
+        $p_after_h1 = $p_after_h1_manual;
+        $p_after_h1_is_auto = false;
+        $p_under_h2 = $manual_p_under_h2;
+        $content = $manual_content;
+        $text_block = $manual_text_block;
+        $auto_links_block = '';
+    }
+
+
     $has_bottom_seo = $paged === 1 && (!empty($auto_links_block) || !empty($content) || !empty($text_block));
     $clean_bottom_seo_html = static function ($html) {
         $html = wp_kses_post($html);

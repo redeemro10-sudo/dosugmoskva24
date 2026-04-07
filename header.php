@@ -170,12 +170,15 @@ $GLOBALS['seo_descr'] = $descr;
             justify-content: center;
             gap: 8px;
             height: 44px;
+            padding: 0 14px;
+            border: 0;
             border-radius: 12px;
             background: linear-gradient(180deg, var(--ea-accent), var(--ea-accent-2));
             color: #fff;
             font-weight: 800;
             letter-spacing: .2px;
             text-decoration: none;
+            cursor: pointer;
             transition: filter .2s ease, transform .08s ease, box-shadow .2s ease;
             box-shadow: 0 8px 18px rgba(232,101,160, .28);
         }
@@ -243,7 +246,7 @@ $GLOBALS['seo_descr'] = $descr;
 
     /** Бренд */
     $site_name = trim((string) get_bloginfo('name'));
-    if ($site_name === '' || preg_match('~almaty|kyzdarki~iu', $site_name)) {
+    if ($site_name === '' || preg_match('~dosugmoskva24~iu', $site_name)) {
         $site_name = 'dosugmoskva24';
     }
     $logo_url  = get_stylesheet_directory_uri() . '/assets/icons/logo.png';
@@ -253,7 +256,7 @@ $GLOBALS['seo_descr'] = $descr;
      * Ключ массива используется для поиска иконки.
      */
 $menu = [
-    'escort_almaty' => ['Эскорт', '/escort'], // Добавлен слэш для корректной работы из любого раздела
+    'escort' => ['Эскорт', '/escort'], // Добавлен слэш для корректной работы из любого раздела
     'novye'         => ['Новые', '/novye'],
     's_video'       => ['С видео', '/s-video'],
     

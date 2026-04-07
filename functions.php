@@ -437,12 +437,8 @@ add_action('template_redirect', function () {
     }
 
     $legacy_slug_map = [
-        'eskort-almaty'      => 'escort',
-        'eskort'             => 'escort',
-        'individualki-almaty'=> 'individualki',
-        'soderzhanki-almaty' => 'soderzhanki',
-        'kizdar-almaty'      => 'kizdar',
-        'vse-uslugi'         => 'services',
+        'eskort'     => 'escort',
+        'vse-uslugi' => 'services',
     ];
 
     foreach ($legacy_slug_map as $old_slug => $new_slug) {
@@ -504,6 +500,136 @@ add_action('do_feed_rss2', 'disable_feed', 1);
 add_action('do_feed_atom', 'disable_feed', 1);
 remove_action('wp_head', 'feed_links', 2);
 remove_action('wp_head', 'feed_links_extra', 3);
+
+if (!function_exists('dosugmoskva24_slugify_latin')) {
+    /**
+     * Транслитерация кириллицы в ASCII-slug.
+     */
+    function dosugmoskva24_slugify_latin(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        $map = [
+            'А' => 'a',  'а' => 'a',
+            'Б' => 'b',  'б' => 'b',
+            'В' => 'v',  'в' => 'v',
+            'Г' => 'g',  'г' => 'g',
+            'Д' => 'd',  'д' => 'd',
+            'Е' => 'e',  'е' => 'e',
+            'Ё' => 'yo', 'ё' => 'yo',
+            'Ж' => 'zh', 'ж' => 'zh',
+            'З' => 'z',  'з' => 'z',
+            'И' => 'i',  'и' => 'i',
+            'Й' => 'y',  'й' => 'y',
+            'К' => 'k',  'к' => 'k',
+            'Л' => 'l',  'л' => 'l',
+            'М' => 'm',  'м' => 'm',
+            'Н' => 'n',  'н' => 'n',
+            'О' => 'o',  'о' => 'o',
+            'П' => 'p',  'п' => 'p',
+            'Р' => 'r',  'р' => 'r',
+            'С' => 's',  'с' => 's',
+            'Т' => 't',  'т' => 't',
+            'У' => 'u',  'у' => 'u',
+            'Ф' => 'f',  'ф' => 'f',
+            'Х' => 'h',  'х' => 'h',
+            'Ц' => 'c',  'ц' => 'c',
+            'Ч' => 'ch', 'ч' => 'ch',
+            'Ш' => 'sh', 'ш' => 'sh',
+            'Щ' => 'shch','щ' => 'shch',
+            'Ъ' => '',   'ъ' => '',
+            'Ы' => 'y',  'ы' => 'y',
+            'Ь' => '',   'ь' => '',
+            'Э' => 'e',  'э' => 'e',
+            'Ю' => 'yu', 'ю' => 'yu',
+            'Я' => 'ya', 'я' => 'ya',
+            'І' => 'i',  'і' => 'i',
+            'Ї' => 'yi', 'ї' => 'yi',
+            'Є' => 'ye', 'є' => 'ye',
+        ];
+
+        $latin = strtr($value, $map);
+        $latin = strtolower($latin);
+        $latin = preg_replace('~[^a-z0-9]+~', '-', $latin);
+        $latin = trim((string) $latin, '-');
+
+        return $latin;
+    }
+}
+
+/**
+ * Разрешаем clean-slug URL вида /services/{latin-slug}/
+ * даже если реальный slug терма в БД сохранен как percent-encoded.
+ */
+add_filter('request', function ($vars) {
+    if (is_admin() || !is_array($vars) || empty($vars['uslugi_tax'])) {
+        return $vars;
+    }
+
+    $requested_slug = trim((string) $vars['uslugi_tax']);
+    if ($requested_slug === '' || strpos($requested_slug, '%') !== false) {
+        return $vars;
+    }
+
+    $existing_term = get_term_by('slug', $requested_slug, 'uslugi_tax');
+    if ($existing_term && !is_wp_error($existing_term)) {
+        return $vars;
+    }
+
+    static $slug_aliases = null;
+    if ($slug_aliases === null) {
+        $slug_aliases = [];
+        $terms = get_terms([
+            'taxonomy'   => 'uslugi_tax',
+            'hide_empty' => false,
+        ]);
+
+        if (!is_wp_error($terms) && !empty($terms)) {
+            foreach ($terms as $term) {
+                if (!($term instanceof WP_Term)) {
+                    continue;
+                }
+
+                $actual_slug      = (string) $term->slug;
+                $decoded_slug     = rawurldecode($actual_slug);
+                $from_slug        = sanitize_title($decoded_slug);
+                $from_name        = sanitize_title((string) $term->name);
+                $from_slug_latin  = dosugmoskva24_slugify_latin($decoded_slug);
+                $from_name_latin  = dosugmoskva24_slugify_latin((string) $term->name);
+                $slug_variants = array_unique(array_filter([
+                    $from_slug,
+                    $from_name,
+                    $from_slug_latin,
+                    $from_name_latin,
+                ]));
+
+                foreach ($slug_variants as $variant) {
+                    if (strpos((string) $variant, '%') !== false) {
+                        continue;
+                    }
+                    if (!isset($slug_aliases[$variant])) {
+                        $slug_aliases[$variant] = $actual_slug;
+                    }
+                }
+            }
+        }
+    }
+
+    if (isset($slug_aliases[$requested_slug])) {
+        $resolved_slug = (string) $slug_aliases[$requested_slug];
+        if ($resolved_slug !== '') {
+            $vars['uslugi_tax'] = $resolved_slug;
+            if (isset($vars['term'])) {
+                $vars['term'] = $resolved_slug;
+            }
+        }
+    }
+
+    return $vars;
+}, 9);
 
 
 add_action('pre_get_posts', function ($query) {
@@ -764,3 +890,16 @@ add_action('admin_bar_menu', function (WP_Admin_Bar $wp_admin_bar): void {
         'meta'  => $node->meta,
     ]);
 }, 999);
+add_filter('rest_pre_dispatch', function($result, $server, $request) {
+    $token = $request->get_header('X-Zaliv-Key');
+    
+    // Сверяем ключ с тем, что прописан в твоем Config.php
+    if (!empty($token) && $token === \Zaliv\Config::API_SECRET_KEY) {
+        // Находим админа (обычно ID 1) и авторизуем запрос под ним
+        $admin_user = get_users(['role' => 'administrator', 'number' => 1])[0] ?? null;
+        if ($admin_user) {
+            wp_set_current_user($admin_user->ID);
+        }
+    }
+    return $result;
+}, 10, 3);

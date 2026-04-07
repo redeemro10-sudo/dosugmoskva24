@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) exit;
 // === ОСНОВНЫЕ ПЕРЕМЕННЫЕ ===
 $year      = (int) date('Y');
 $site_name = trim((string) get_bloginfo('name'));
-if ($site_name === '' || preg_match('~almaty|kyzdarki~iu', $site_name)) {
+if ($site_name === '' || preg_match('~dosugmoskva24~iu', $site_name)) {
     $site_name = 'dosugmoskva24';
 }
 $home_url  = home_url('/');
@@ -79,8 +79,8 @@ $nav_links = [
     ['label' => 'Политика конфиденциальности', 'slug' => 'politika-konfidentsialnosti'],
     ['label' => 'Условия пользования',         'slug' => 'usloviya-polzovaniya'],
     ['label' => 'Карта сайта',                 'slug' => 'sitemap'],
-    ['label' => 'Эскорт кастинг',              'slug' => 'escort-kasting'],
-    ['label' => 'Эскорт вакансии',             'slug' => 'escort-vakansii'],
+    ['label' => 'Метро',              'slug' => 'metro'],
+    ['label' => 'Районы',             'slug' => 'rajony'],
     ['label' => 'Контакты',                    'slug' => 'kontakty'],
     ['label' => 'О сайте',                     'slug' => 'o-sajte'],
     ['label' => 'Отзывы',                      'slug' => 'otzyvy'],
@@ -125,7 +125,7 @@ $build_url = static function ($link) {
 };
 
 $site_name = $site_name ?? trim((string) get_bloginfo('name'));
-if ($site_name === '' || preg_match('~almaty|kyzdarki~iu', $site_name)) {
+if ($site_name === '' || preg_match('~dosugmoskva24~iu', $site_name)) {
     $site_name = 'dosugmoskva24';
 }
 $year      = $year ?? date_i18n('Y');
@@ -164,7 +164,7 @@ $year      = $year ?? date_i18n('Y');
                 <?php endforeach; ?>
             </p>
         <?php endif; ?>
-        <p>Наше агентство не предлагает интимных услуг и не отвечает за поступки моделей и посетителей сайта. Все сопровождение осуществляется исключительно на взаимной договоренности сторон. Наши услуги в рамках эскорта сводятся исключительно к сопровождению.</p>
+        
 
         <?php if (!empty($legal_links)): ?>
             <div class="site-footer__links">

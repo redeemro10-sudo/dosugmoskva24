@@ -18,7 +18,7 @@ function _seo_site_brand(): string
     if ($name === '') return SEO_SITE_BRAND;
 
     // Если в настройках осталось старое имя проекта, принудительно используем актуальный бренд.
-    if (preg_match('~almaty|kyzdarki~iu', $name)) return SEO_SITE_BRAND;
+    if (preg_match('~dosugmoskva24~iu', $name)) return SEO_SITE_BRAND;
 
     return $name;
 }
@@ -28,9 +28,8 @@ function _seo_normalize_brand_text(string $s): string
     $s = trim($s);
     if ($s === '') return '';
 
-    $s = preg_replace('~almaty\s*kyzdarki~iu', SEO_SITE_BRAND, $s);
-    $s = preg_replace('~almaty\.?kyzdarki(?:\.net|\.kz)?~iu', SEO_SITE_BRAND, $s);
-    $s = preg_replace('~kyzdarki~iu', SEO_SITE_BRAND, $s);
+    $s = preg_replace('~dosugmoskva24(?:\.net)?~iu', SEO_SITE_BRAND, $s);
+    $s = preg_replace('~dosugmoskva24~iu', SEO_SITE_BRAND, $s);
     $s = preg_replace('~\s+~u', ' ', (string) $s);
 
     return trim((string) $s);
@@ -42,10 +41,9 @@ function _seo_normalize_descr_text(string $s): string
     if ($s === '') return '';
 
     // В description не используем домен/бренд, заменяем на нейтральное "сайте".
-    $s = preg_replace('~almaty\s*kyzdarki~iu', 'сайте', $s);
-    $s = preg_replace('~almaty\.?kyzdarki(?:\.net|\.kz)?~iu', 'сайте', $s);
+    $s = preg_replace('~dosugmoskva24(?:\.net)?~iu', 'сайте', $s);
     $s = preg_replace('~dosugmoskva24~iu', 'сайте', $s);
-    $s = preg_replace('~kyzdarki~iu', 'сайте', $s);
+    $s = preg_replace('~dosugmoskva24~iu', 'сайте', $s);
     $s = preg_replace('~\bсайте\s+сайте\b~iu', 'сайте', $s);
     $s = preg_replace('~\s+~u', ' ', (string) $s);
 

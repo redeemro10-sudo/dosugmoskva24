@@ -79,8 +79,8 @@ $q = new WP_Query([
     'ignore_sticky_posts' => true,
 ]);
 
-if (function_exists('kyzdarki_generate_term_parent_auto_text')) {
-    $auto_text = kyzdarki_generate_term_parent_auto_text([
+if (function_exists('dosugmoskva24_generate_term_parent_auto_text')) {
+    $auto_text = dosugmoskva24_generate_term_parent_auto_text([
         'post_type' => $post_type,
         'taxonomy' => $taxonomy,
         'page_slug' => $page_slug,
