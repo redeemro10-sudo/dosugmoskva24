@@ -21,9 +21,21 @@ function render_model_grid_with_filters()
 
   // --- 2. Контекст "ДЕШЕВЫЕ" / "ЭЛИТНЫЕ" и страницы-разделы ---
   $page_slug = '';
-  if (is_page()) {
-    $qo = get_queried_object();
-    if ($qo && !is_wp_error($qo) && !empty($qo->post_name)) $page_slug = (string) $qo->post_name;
+  $qo = get_queried_object();
+  if ($qo && !is_wp_error($qo)) {
+    if (!empty($qo->post_name)) {
+      $page_slug = (string) $qo->post_name;
+    } elseif (!empty($qo->slug)) {
+      $page_slug = (string) $qo->slug;
+    }
+  }
+  // Fallback по URI — на случай если queried object не определился
+  if ($page_slug === '' && !empty($_SERVER['REQUEST_URI'])) {
+    $uri_path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '', '/');
+    if ($uri_path !== '') {
+      $parts = explode('/', $uri_path);
+      $page_slug = end($parts);
+    }
   }
 
   $cheap_only = false;
@@ -103,7 +115,10 @@ function render_model_grid_with_filters()
     if (empty($base_tax) && is_tax()) {
       $term = get_queried_object();
       if ($term && !is_wp_error($term) && in_array($term->taxonomy, $ALLOWED_TAX, true)) {
-        $base_tax = ['taxonomy' => $term->taxonomy, 'terms' => [(int)$term->term_id]];
+        // Для архива "Элитные" не ограничиваем по term — фильтрация идёт через meta_query (vip / price)
+        if (!($term->taxonomy === 'drygie_tax' && $term->slug === 'elitnyye-prostitutki')) {
+          $base_tax = ['taxonomy' => $term->taxonomy, 'terms' => [(int)$term->term_id]];
+        }
       }
     }
 
