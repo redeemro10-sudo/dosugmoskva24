@@ -196,6 +196,17 @@ if ($h2 === '' && function_exists('get_field') && $id) {
     $h2 = (string) get_field('h2_title', $id);
 }
 
+// Принудительная авто-генерация H2 для nationalnost (даже если H1 пришёл из ACF).
+if ($context === 'nationalnost' && $title_piece !== '') {
+    $nat_gen_force = function_exists('_seo_inflect_nationality_gen')
+        ? _seo_inflect_nationality_gen($title_piece)
+        : $title_piece;
+    $h2 = "Анкеты проституток {$nat_gen_force}";
+    if ($h1 === '' || stripos($h1, 'в Москва') !== false) {
+        $h1 = "Проститутки {$title_piece} в Москве";
+    }
+}
+
 $h1 = _auto_heading_clean((string) $h1);
 $h2 = _auto_heading_clean((string) $h2);
 
