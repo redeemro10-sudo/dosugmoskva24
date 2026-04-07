@@ -42,7 +42,9 @@ if (is_tax() || is_tag() || is_category()) {
 if (empty($base_tax) && is_page()) {
     $page_id   = get_queried_object_id();
     $page_slug = $page_id ? (string) get_post_field('post_name', $page_id) : '';
-    if ($page_slug !== '') {
+    // Страница "Элитные" фильтруется через meta_query (vip / price) в ModelGrid,
+    // а не через term drygie_tax/elitnyye-prostitutki — иначе попадают только анкеты с термом.
+    if ($page_slug !== '' && $page_slug !== 'elitnyye-prostitutki') {
         foreach ($ALLOWED_TAX as $tx) {
             $t = get_term_by('slug', $page_slug, $tx);
             if ($t && !is_wp_error($t)) {
