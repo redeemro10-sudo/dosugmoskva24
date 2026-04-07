@@ -309,6 +309,7 @@ function render_model_grid_with_filters()
   if ($elite_only) {
     $meta_query[] = [
       'relation' => 'OR',
+      ['key' => 'vip',           'value' => '1', 'compare' => '='],
       ['key' => 'price_outcall', 'value' => 25000, 'type' => 'NUMERIC', 'compare' => '>='],
       ['key' => 'price',         'value' => 25000, 'type' => 'NUMERIC', 'compare' => '>='],
     ];
