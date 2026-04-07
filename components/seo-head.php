@@ -296,6 +296,18 @@ function _seo_random_phrase_vin(int $seed = 0): array
     return [$verbs[array_rand($verbs)], $nouns[array_rand($nouns)]];
 }
 
+function _seo_random_verb(int $seed = 0): string
+{
+    $verbs = ['снять', 'заказать', 'вызвать'];
+    return $seed > 0 ? $verbs[$seed % 3] : $verbs[array_rand($verbs)];
+}
+
+function _seo_random_noun_gen(int $seed = 0): string
+{
+    $nouns = ['проституток', 'шлюх', 'индивидуалок'];
+    return $seed > 0 ? $nouns[((int) floor($seed / 3)) % 3] : $nouns[array_rand($nouns)];
+}
+
 function _seo_plural_anket(int $n): string
 {
     $n100 = abs($n) % 100;
@@ -317,7 +329,11 @@ function _seo_build_landing_title_by_kind(string $kind, string $cat_name, string
     }
 
     if ($kind === 'rajon') {
-        return "Индивидуалки {$cat_name} — интим услуги в районе {$cat_name} (фото и цены)";
+        $term_id = (int) ($extra['term_id'] ?? 0);
+        $count   = (int) ($extra['count'] ?? 0);
+        [$verb, $noun] = _seo_random_phrase_vin($term_id);
+        $count_part = $count > 0 ? " | доступно {$count} " . _seo_plural_anket($count) : '';
+        return "Проститутки {$cat_name} — {$verb} {$noun} в районе {$cat_name} 24/7{$count_part}";
     }
 
     if ($kind === 'uslugi') {
@@ -356,7 +372,12 @@ function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array 
     }
 
     if ($kind === 'rajon') {
-        return "Актуальный каталог проституток в районе {$cat_name}: анкеты с фото, ценами и фильтрами по району.";
+        $term_id   = (int) ($extra['term_id'] ?? 0);
+        $price_txt = (string) ($extra['price_txt'] ?? '');
+        $verb = _seo_random_verb($term_id);
+        $noun_gen = _seo_random_noun_gen($term_id);
+        $price_part = $price_txt !== '' ? " от {$price_txt} рублей за час" : '';
+        return "Проститутки в районе {$cat_name} | {$verb}{$price_part}, проверенные анкеты {$noun_gen} в районе {$cat_name}";
     }
 
     if ($kind === 'uslugi') {
@@ -479,7 +500,7 @@ function _seo_build_title(array $ctx): string
         $kind = _seo_landing_kind_by_taxonomy($tax);
         if ($kind !== '') {
             $extra = [];
-            if ($kind === 'metro' && $term) {
+            if (($kind === 'metro' || $kind === 'rajon') && $term) {
                 $extra['term_id'] = (int) $term->term_id;
                 $extra['count']   = _seo_count_models_by_term($term, $tax);
             }
@@ -499,7 +520,7 @@ function _seo_build_title(array $ctx): string
                 $price_num = _seo_min_price_num_by_term($qo, $tax);
                 $price_txt = $price_num > 0 ? number_format_i18n($price_num) : '';
                 $extra = [];
-                if ($kind === 'metro') {
+                if ($kind === 'metro' || $kind === 'rajon') {
                     $extra['term_id'] = (int) $qo->term_id;
                     $extra['count']   = _seo_count_models_by_term($qo, $tax);
                 }
@@ -620,7 +641,7 @@ function _seo_build_descr(array $ctx): string
         $kind = _seo_landing_kind_by_taxonomy($tax);
         if ($kind !== '') {
             $extra = [];
-            if ($kind === 'metro' && $term) {
+            if (($kind === 'metro' || $kind === 'rajon') && $term) {
                 $price_num = _seo_min_price_num_by_term($term, $tax);
                 $extra['term_id']   = (int) $term->term_id;
                 $extra['price_txt'] = $price_num > 0 ? number_format_i18n($price_num) : '';
@@ -636,7 +657,7 @@ function _seo_build_descr(array $ctx): string
             if ($kind !== '') {
                 $cat_name = _seo_decode_entities((string) $qo->name);
                 $extra = [];
-                if ($kind === 'metro') {
+                if ($kind === 'metro' || $kind === 'rajon') {
                     $price_num = _seo_min_price_num_by_term($qo, (string) $qo->taxonomy);
                     $extra['term_id']   = (int) $qo->term_id;
                     $extra['price_txt'] = $price_num > 0 ? number_format_i18n($price_num) : '';

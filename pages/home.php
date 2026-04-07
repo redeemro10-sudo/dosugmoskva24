@@ -306,12 +306,13 @@ if ($is_district_context) {
                     break;
                 }
             }
-            $district_h1 = "Проститутки в районе {$district_name}";
+            $district_h1 = "Проститутки район {$district_name}";
             $custom_h1_override = $district_h1;
             set_query_var('auto_h1', $district_h1);
             $GLOBALS['auto_h1'] = $district_h1;
-            set_query_var('auto_h2', 'Анкеты проституток');
-            $GLOBALS['auto_h2'] = 'Анкеты проституток';
+            $district_h2 = "Анкеты проституток в районе {$district_name}";
+            set_query_var('auto_h2', $district_h2);
+            $GLOBALS['auto_h2'] = $district_h2;
 
             $resolve_min_price = static function (string $meta_key, int $term_id = 0): int {
                 $args = [

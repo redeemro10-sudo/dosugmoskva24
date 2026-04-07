@@ -163,8 +163,8 @@ if ($h1 === '' && $context === 'models' && $title_piece !== '') {
     $h2 = "Анкеты проституток у метро {$title_piece}";
 } elseif ($h1 === '' && $context === 'rajon' && $title_piece !== '') {
 
-    $h1 = "Проститутки в районе {$title_piece}";
-    $h2 = "Анкеты проституток";
+    $h1 = "Проститутки район {$title_piece}";
+    $h2 = "Анкеты проституток в районе {$title_piece}";
 } elseif ($h1 === '' && $context === 'uslugi' && $title_piece !== '') {
 
     $h1 = "{$title_piece} в Москве";
