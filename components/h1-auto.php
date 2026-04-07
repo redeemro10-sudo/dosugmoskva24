@@ -160,7 +160,7 @@ if ($h1 === '' && $context === 'models' && $title_piece !== '') {
 } elseif ($h1 === '' && $context === 'metro' && $title_piece !== '') {
 
     $h1 = "Проститутки у метро {$title_piece}";
-    $h2 = "Анкеты проституток {$title_piece}";
+    $h2 = "Анкеты проституток у метро {$title_piece}";
 } elseif ($h1 === '' && $context === 'rajon' && $title_piece !== '') {
 
     $h1 = "Проститутки в районе {$title_piece}";

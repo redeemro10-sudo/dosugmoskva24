@@ -284,13 +284,36 @@ function _seo_landing_kind_by_taxonomy(string $taxonomy): string
     return $tax_to_kind[$taxonomy] ?? '';
 }
 
-function _seo_build_landing_title_by_kind(string $kind, string $cat_name, string $price_txt = ''): string
+function _seo_random_phrase_vin(int $seed = 0): array
+{
+    $verbs = ['снять', 'заказать', 'вызвать'];
+    $nouns = ['проститутку', 'шлюху', 'индивидуалку'];
+    if ($seed > 0) {
+        $v = $verbs[$seed % 3];
+        $n = $nouns[((int) floor($seed / 3)) % 3];
+        return [$v, $n];
+    }
+    return [$verbs[array_rand($verbs)], $nouns[array_rand($nouns)]];
+}
+
+function _seo_plural_anket(int $n): string
+{
+    $n100 = abs($n) % 100;
+    $n10  = $n100 % 10;
+    if ($n100 > 10 && $n100 < 20) return 'анкет';
+    if ($n10 === 1) return 'анкета';
+    if ($n10 >= 2 && $n10 <= 4) return 'анкеты';
+    return 'анкет';
+}
+
+function _seo_build_landing_title_by_kind(string $kind, string $cat_name, string $price_txt = '', array $extra = []): string
 {
     if ($kind === 'metro') {
-        if ($price_txt !== '') {
-            return "Проститутки метро {$cat_name} — интим услуги рядом с метро (цены от {$price_txt} руб.)";
-        }
-        return "Проститутки метро {$cat_name} — интим услуги рядом с метро (цены по договоренности)";
+        $term_id = (int) ($extra['term_id'] ?? 0);
+        $count   = (int) ($extra['count'] ?? 0);
+        [$verb, $noun] = _seo_random_phrase_vin($term_id);
+        $count_part = $count > 0 ? " | {$count} " . _seo_plural_anket($count) : '';
+        return "Проститутки {$cat_name} {$verb} {$noun} у метро {$cat_name}{$count_part}";
     }
 
     if ($kind === 'rajon') {
@@ -322,10 +345,14 @@ function _seo_build_landing_title_by_kind(string $kind, string $cat_name, string
     return '';
 }
 
-function _seo_build_landing_descr_by_kind(string $kind, string $cat_name): string
+function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array $extra = []): string
 {
     if ($kind === 'metro') {
-        return "Актуальный каталог проституток у метро {$cat_name}: анкеты с фото, ценами и фильтрами по метро.";
+        $term_id   = (int) ($extra['term_id'] ?? 0);
+        $price_txt = (string) ($extra['price_txt'] ?? '');
+        [$verb, $noun] = _seo_random_phrase_vin($term_id);
+        $price_part = $price_txt !== '' ? " от {$price_txt} рублей" : '';
+        return "Проститутки у станции метро {$cat_name}, {$verb} {$noun}{$price_part} с выездом или приемом у себя 24/7";
     }
 
     if ($kind === 'rajon') {
@@ -451,7 +478,12 @@ function _seo_build_title(array $ctx): string
         $price_txt = $price_num > 0 ? number_format_i18n($price_num) : '';
         $kind = _seo_landing_kind_by_taxonomy($tax);
         if ($kind !== '') {
-            $built = _seo_build_landing_title_by_kind($kind, $cat_name, $price_txt);
+            $extra = [];
+            if ($kind === 'metro' && $term) {
+                $extra['term_id'] = (int) $term->term_id;
+                $extra['count']   = _seo_count_models_by_term($term, $tax);
+            }
+            $built = _seo_build_landing_title_by_kind($kind, $cat_name, $price_txt, $extra);
             if ($built !== '') return $built;
         }
     }
@@ -466,7 +498,12 @@ function _seo_build_title(array $ctx): string
                 $cat_name = _seo_decode_entities((string) $qo->name);
                 $price_num = _seo_min_price_num_by_term($qo, $tax);
                 $price_txt = $price_num > 0 ? number_format_i18n($price_num) : '';
-                $built = _seo_build_landing_title_by_kind($kind, $cat_name, $price_txt);
+                $extra = [];
+                if ($kind === 'metro') {
+                    $extra['term_id'] = (int) $qo->term_id;
+                    $extra['count']   = _seo_count_models_by_term($qo, $tax);
+                }
+                $built = _seo_build_landing_title_by_kind($kind, $cat_name, $price_txt, $extra);
                 if ($built !== '') return $built;
             }
         }
@@ -582,7 +619,13 @@ function _seo_build_descr(array $ctx): string
         $cat_name = $term ? _seo_decode_entities((string) $term->name) : _seo_decode_entities(get_the_title($ctx['id']));
         $kind = _seo_landing_kind_by_taxonomy($tax);
         if ($kind !== '') {
-            return _seo_trim_170(_seo_build_landing_descr_by_kind($kind, $cat_name));
+            $extra = [];
+            if ($kind === 'metro' && $term) {
+                $price_num = _seo_min_price_num_by_term($term, $tax);
+                $extra['term_id']   = (int) $term->term_id;
+                $extra['price_txt'] = $price_num > 0 ? number_format_i18n($price_num) : '';
+            }
+            return _seo_trim_170(_seo_build_landing_descr_by_kind($kind, $cat_name, $extra));
         }
     }
 
@@ -592,7 +635,13 @@ function _seo_build_descr(array $ctx): string
             $kind = _seo_landing_kind_by_taxonomy((string) $qo->taxonomy);
             if ($kind !== '') {
                 $cat_name = _seo_decode_entities((string) $qo->name);
-                return _seo_trim_170(_seo_build_landing_descr_by_kind($kind, $cat_name));
+                $extra = [];
+                if ($kind === 'metro') {
+                    $price_num = _seo_min_price_num_by_term($qo, (string) $qo->taxonomy);
+                    $extra['term_id']   = (int) $qo->term_id;
+                    $extra['price_txt'] = $price_num > 0 ? number_format_i18n($price_num) : '';
+                }
+                return _seo_trim_170(_seo_build_landing_descr_by_kind($kind, $cat_name, $extra));
             }
         }
     }
