@@ -498,8 +498,9 @@ if ($is_metro_context) {
             $custom_h1_override = $metro_h1;
             set_query_var('auto_h1', $metro_h1);
             $GLOBALS['auto_h1'] = $metro_h1;
-            set_query_var('auto_h2', 'Анкеты проституток');
-            $GLOBALS['auto_h2'] = 'Анкеты проституток';
+            $metro_h2 = "Анкеты проституток у метро {$station_name}";
+            set_query_var('auto_h2', $metro_h2);
+            $GLOBALS['auto_h2'] = $metro_h2;
 
             $line_name = '';
             $line_meta_keys = ['line_name', 'metro_line', 'line', 'vetka', 'line_title'];
