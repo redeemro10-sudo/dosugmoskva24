@@ -193,8 +193,11 @@ $h2 = _auto_heading_clean((string) $h2);
 // По требованию: в H1 не оставляем хвост после двоеточия.
 $h1 = trim((string) preg_replace('~\s*:\s*.*$~u', '', $h1));
 
-set_query_var('auto_h1', $h1);
-set_query_var('auto_h2', $h2);
-
-$GLOBALS['auto_h1'] = $h1;
-$GLOBALS['auto_h2'] = $h2;
+if ($h1 !== '') {
+    set_query_var('auto_h1', $h1);
+    $GLOBALS['auto_h1'] = $h1;
+}
+if ($h2 !== '') {
+    set_query_var('auto_h2', $h2);
+    $GLOBALS['auto_h2'] = $h2;
+}
