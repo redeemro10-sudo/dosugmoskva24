@@ -169,7 +169,7 @@ if ($h1 === '' && $context === 'models' && $title_piece !== '') {
     $h2 = "Анкеты проституток в районе {$title_piece}";
 } elseif ($h1 === '' && $context === 'uslugi' && $title_piece !== '') {
 
-    $h1 = "{$title_piece} в Москве";
+    $h1 = "Проститутки с услугой {$title_piece} в Москве";
     $h2 = "Анкеты проституток с услугой {$title_piece}";
 } elseif ($h1 === '' && $context === 'nationalnost' && $title_piece !== '') {
 
@@ -205,6 +205,12 @@ if ($context === 'nationalnost' && $title_piece !== '') {
     if ($h1 === '' || stripos($h1, 'в Москва') !== false) {
         $h1 = "Проститутки {$title_piece} в Москве";
     }
+}
+
+// Принудительная авто-генерация H1/H2 для uslugi (перебивает ACF).
+if ($context === 'uslugi' && $title_piece !== '') {
+    $h1 = "Проститутки с услугой {$title_piece} в Москве";
+    $h2 = "Анкеты проституток с услугой {$title_piece}";
 }
 
 $h1 = _auto_heading_clean((string) $h1);

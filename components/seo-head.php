@@ -308,6 +308,29 @@ function _seo_random_noun_gen(int $seed = 0): string
     return $seed > 0 ? $nouns[((int) floor($seed / 3)) % 3] : $nouns[array_rand($nouns)];
 }
 
+/** Родительный падеж ед.ч. для услуги (классический массаж → классического массажа). Грубая эвристика. */
+function _seo_inflect_usluga_gen(string $name): string
+{
+    $name = trim($name);
+    if ($name === '') return $name;
+    $words = preg_split('~\s+~u', $name);
+    foreach ($words as &$w) {
+        $low = function_exists('mb_strtolower') ? mb_strtolower($w, 'UTF-8') : strtolower($w);
+        if (preg_match('~ия$~u', $low))      { $w = mb_substr($w, 0, -1, 'UTF-8') . 'и'; continue; }
+        if (preg_match('~ие$~u', $low))      { $w = mb_substr($w, 0, -1, 'UTF-8') . 'я'; continue; }
+        if (preg_match('~ье$~u', $low))      { $w = mb_substr($w, 0, -1, 'UTF-8') . 'я'; continue; }
+        if (preg_match('~ая$~u', $low))      { $w = mb_substr($w, 0, -2, 'UTF-8') . 'ой'; continue; }
+        if (preg_match('~яя$~u', $low))      { $w = mb_substr($w, 0, -2, 'UTF-8') . 'ей'; continue; }
+        if (preg_match('~ый$~u', $low))      { $w = mb_substr($w, 0, -2, 'UTF-8') . 'ого'; continue; }
+        if (preg_match('~ий$~u', $low))      { $w = mb_substr($w, 0, -2, 'UTF-8') . 'его'; continue; }
+        if (preg_match('~ка$~u', $low))      { $w = mb_substr($w, 0, -1, 'UTF-8') . 'и'; continue; }
+        if (preg_match('~а$~u',  $low))      { $w = mb_substr($w, 0, -1, 'UTF-8') . 'ы'; continue; }
+        if (preg_match('~я$~u',  $low))      { $w = mb_substr($w, 0, -1, 'UTF-8') . 'и'; continue; }
+        if (preg_match('~[бвгдзжклмнпрстфхцчшщ]$~u', $low)) { $w .= 'а'; continue; }
+    }
+    return implode(' ', $words);
+}
+
 /** Винительный падеж ед.ч. для жен. национальности (русская→русскую, армянка→армянку). */
 function _seo_inflect_nationality_acc(string $name): string
 {
@@ -362,10 +385,10 @@ function _seo_build_landing_title_by_kind(string $kind, string $cat_name, string
     }
 
     if ($kind === 'uslugi') {
-        if ($price_txt !== '') {
-            return "{$cat_name} Москва — заказать интим услуги в Москве (цены от {$price_txt} руб.)";
-        }
-        return "{$cat_name} Москва — заказать интим услуги в Москве (цены по договоренности)";
+        $term_id = (int) ($extra['term_id'] ?? 0);
+        [$verb, $noun] = _seo_random_phrase_vin($term_id);
+        $usl_gen = _seo_inflect_usluga_gen($cat_name);
+        return "Проститутки для {$usl_gen} в Москве, {$verb} {$noun} для услуги {$cat_name} в Москве 24/7";
     }
 
     if ($kind === 'appearance') {
@@ -410,7 +433,15 @@ function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array 
     }
 
     if ($kind === 'uslugi') {
-        return "Актуальный каталог проституток Москвы с услугой {$cat_name}: анкеты с фото, ценами и фильтрами";
+        $term_id   = (int) ($extra['term_id'] ?? 0);
+        $count     = (int) ($extra['count'] ?? 0);
+        $price_txt = (string) ($extra['price_txt'] ?? '');
+        $noun_nom_pool = ['проститутки', 'шлюхи', 'индивидуалки'];
+        $noun_nom = $term_id > 0 ? $noun_nom_pool[((int) floor($term_id / 3)) % 3] : $noun_nom_pool[array_rand($noun_nom_pool)];
+        $usl_gen = _seo_inflect_usluga_gen($cat_name);
+        $count_part = $count > 0 ? " {$count} проверенных " . _seo_plural_anket($count) : ' проверенные анкеты';
+        $price_part = $price_txt !== '' ? " от {$price_txt} рублей за час" : '';
+        return "{$cat_name} в Москве{$count_part} с выездом и приемом у себя, лучшие {$noun_nom} для {$usl_gen} в Москве{$price_part}";
     }
 
     if ($kind === 'appearance') {
@@ -554,7 +585,7 @@ function _seo_build_title(array $ctx): string
                 $price_num = _seo_min_price_num_by_term($qo, $tax);
                 $price_txt = $price_num > 0 ? number_format_i18n($price_num) : '';
                 $extra = [];
-                if ($kind === 'metro' || $kind === 'rajon' || $kind === 'nationality') {
+                if ($kind === 'metro' || $kind === 'rajon' || $kind === 'nationality' || $kind === 'uslugi') {
                     $extra['term_id'] = (int) $qo->term_id;
                     $extra['count']   = _seo_count_models_by_term($qo, $tax);
                 }
@@ -691,7 +722,7 @@ function _seo_build_descr(array $ctx): string
             if ($kind !== '') {
                 $cat_name = _seo_decode_entities((string) $qo->name);
                 $extra = [];
-                if ($kind === 'metro' || $kind === 'rajon' || $kind === 'nationality') {
+                if ($kind === 'metro' || $kind === 'rajon' || $kind === 'nationality' || $kind === 'uslugi') {
                     $price_num = _seo_min_price_num_by_term($qo, (string) $qo->taxonomy);
                     $extra['term_id']   = (int) $qo->term_id;
                     $extra['price_txt'] = $price_num > 0 ? number_format_i18n($price_num) : '';
