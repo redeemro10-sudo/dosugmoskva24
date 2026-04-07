@@ -183,6 +183,18 @@ function render_model_grid_with_filters()
     foreach ($ALLOWED_TAX as $tx) {
       if (!isset($_POST[$tx])) continue;
       $vals = $normalize_values($_POST[$tx]);
+      // Спец-слаги "Элитные"/"Дешёвые" в price_tax переводим в meta_query (vip / price),
+      // а не фильтруем по самому терму — иначе остались бы только анкеты с проставленным термом.
+      if ($tx === 'price_tax' && !empty($vals)) {
+        if (in_array('elitnyye-prostitutki', $vals, true)) {
+          $elite_only = true;
+          $vals = array_values(array_diff($vals, ['elitnyye-prostitutki']));
+        }
+        if (in_array('deshevyye-prostitutki', $vals, true)) {
+          $cheap_only = true;
+          $vals = array_values(array_diff($vals, ['deshevyye-prostitutki']));
+        }
+      }
       if (!empty($vals)) {
         $tax_query[] = ['taxonomy' => $tx, 'field' => 'slug', 'terms' => $vals, 'operator' => 'IN'];
       }
