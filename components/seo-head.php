@@ -175,18 +175,24 @@ function _seo_count_models_by_term($term, string $taxonomy): int
 {
     if (!$term) return 0;
 
+    $tax_query = [[
+        'taxonomy' => $taxonomy,
+        'field'    => 'term_id',
+        'terms'    => [(int) $term->term_id],
+        'operator' => 'IN',
+    ]];
+
+    if ($taxonomy === 'nationalnost_tax') {
+        $tax_query[0]['include_children'] = false;
+    }
+
     $q = new WP_Query([
         'post_type'      => 'models',
         'post_status'    => 'publish',
         'posts_per_page' => 1,
         'fields'         => 'ids',
         'no_found_rows'  => false,
-        'tax_query'      => [[
-            'taxonomy' => $taxonomy,
-            'field'    => 'term_id',
-            'terms'    => [(int)$term->term_id],
-            'operator' => 'IN',
-        ]],
+        'tax_query'      => $tax_query,
     ]);
 
     $n = (int) $q->found_posts;
@@ -199,18 +205,24 @@ function _seo_min_price_label_by_term($term, string $taxonomy): string
 {
     if (!$term) return '';
 
+    $tax_query = [[
+        'taxonomy' => $taxonomy,
+        'field'    => 'term_id',
+        'terms'    => [(int) $term->term_id],
+        'operator' => 'IN',
+    ]];
+
+    if ($taxonomy === 'nationalnost_tax') {
+        $tax_query[0]['include_children'] = false;
+    }
+
     $q = new WP_Query([
         'post_type'      => 'models',
         'post_status'    => 'publish',
         'posts_per_page' => -1,
         'fields'         => 'ids',
         'no_found_rows'  => true,
-        'tax_query'      => [[
-            'taxonomy' => $taxonomy,
-            'field'    => 'term_id',
-            'terms'    => [(int)$term->term_id],
-            'operator' => 'IN',
-        ]],
+        'tax_query'      => $tax_query,
     ]);
 
     $min_num   = null;
