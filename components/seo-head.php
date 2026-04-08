@@ -199,6 +199,32 @@ function _seo_resolve_landing_term(array $ctx, string $taxonomy)
     return null;
 }
 
+function _seo_resolve_base_tax_landing(array $ctx): array
+{
+    $base_tax = get_query_var('base_tax');
+    if (!is_array($base_tax) || empty($base_tax['taxonomy'])) {
+        return [];
+    }
+
+    $taxonomy = (string) $base_tax['taxonomy'];
+    $kind = _seo_landing_kind_by_taxonomy($taxonomy);
+    if ($kind === '') {
+        return [];
+    }
+
+    $term = _seo_resolve_landing_term($ctx, $taxonomy);
+    if (!$term instanceof WP_Term || is_wp_error($term)) {
+        return [];
+    }
+
+    return [
+        'taxonomy' => $taxonomy,
+        'kind' => $kind,
+        'term' => $term,
+        'name' => _seo_decode_entities((string) $term->name),
+    ];
+}
+
 /** Посчитать количество анкет models, привязанных к терму */
 function _seo_count_models_by_term($term, string $taxonomy): int
 {
@@ -819,6 +845,19 @@ function _seo_build_title(array $ctx): string
         }
     }
 
+    $base_tax_landing = _seo_resolve_base_tax_landing($ctx);
+    if ($ctx['is_singular'] && !empty($base_tax_landing)) {
+        $tax = (string) $base_tax_landing['taxonomy'];
+        $kind = (string) $base_tax_landing['kind'];
+        $term = $base_tax_landing['term'];
+        $cat_name = (string) $base_tax_landing['name'];
+        $price_num = _seo_min_price_num_by_term($term, $tax);
+        $price_txt = _seo_format_meta_price($price_num);
+        $extra = _seo_prepare_landing_extra($term, $tax, $kind);
+        $built = _seo_build_landing_title_by_kind($kind, $cat_name, $price_txt, $extra);
+        if ($built !== '') return $built;
+    }
+
     // Страница анкеты models
     if ($ctx['is_singular'] && $pt === 'models' && $ctx['id']) {
         if (function_exists('get_field')) {
@@ -943,6 +982,16 @@ function _seo_build_descr(array $ctx): string
                 return _seo_trim_170(_seo_build_landing_descr_by_kind($kind, $cat_name, $extra));
             }
         }
+    }
+
+    $base_tax_landing = _seo_resolve_base_tax_landing($ctx);
+    if ($ctx['is_singular'] && !empty($base_tax_landing)) {
+        $tax = (string) $base_tax_landing['taxonomy'];
+        $kind = (string) $base_tax_landing['kind'];
+        $term = $base_tax_landing['term'];
+        $cat_name = (string) $base_tax_landing['name'];
+        $extra = _seo_prepare_landing_extra($term, $tax, $kind);
+        return _seo_trim_170(_seo_build_landing_descr_by_kind($kind, $cat_name, $extra));
     }
 
     // models: ACF description
