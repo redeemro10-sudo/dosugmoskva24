@@ -35,7 +35,7 @@ if (!function_exists('dosugmoskva24_seo_template_defaults')) {
                     'h1' => 'Проститутки {nationality_name} в Москве',
                     'h2' => 'Анкеты проституток {nationality_name_gen}',
                     'title' => 'Проститутки {nationality_name} Москвы - {verb} {noun_acc} {nationality_name_acc} от {price} рублей',
-                    'description' => '{verb} {nationality_name_gen} в Москве, {count} {count_word} доступно | анкеты проституток {nationality_name_gen} с проверенными фото | выезд прием 24/7',
+                    'description' => '{verb} {nationality_name_acc} в Москве, {count} {count_word} доступно | анкеты проституток {nationality_name_gen} с проверенными фото | выезд прием 24/7',
                 ],
                 'uslugi' => [
                     'h1' => 'Проститутки с услугой {service_name} в Москве',

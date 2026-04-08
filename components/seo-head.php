@@ -114,10 +114,18 @@ function _seo_decode_entities(string $s): string
     return html_entity_decode($s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 }
 
+function _seo_normalize_meta_text(string $s): string
+{
+    $s = _seo_decode_entities($s);
+    $s = str_replace(["\u{00A0}", '&nbsp;', '&#160;'], ' ', $s);
+    $s = preg_replace('~\s+~u', ' ', (string) $s);
+    return trim((string) $s);
+}
+
 function _seo_trim_170(string $s): string
 {
     $s = trim(preg_replace('~\s+~u', ' ', wp_strip_all_tags($s)));
-    $s = _seo_decode_entities($s);
+    $s = _seo_normalize_meta_text($s);
     if (mb_strlen($s, 'UTF-8') > 170) $s = mb_substr($s, 0, 169, 'UTF-8') . '…';
     return $s;
 }
@@ -241,6 +249,15 @@ function _seo_min_price_num_by_term($term, string $taxonomy): int
     $label = _seo_min_price_label_by_term($term, $taxonomy);
     if ($label === '') return 0;
     return (int) preg_replace('~\D+~', '', $label);
+}
+
+function _seo_format_meta_price(int $price_num): string
+{
+    if ($price_num <= 0) {
+        return '';
+    }
+
+    return _seo_normalize_meta_text(number_format_i18n($price_num));
 }
 
 function _seo_find_related_term_name($term, string $source_taxonomy, string $target_taxonomy): string
@@ -369,6 +386,9 @@ function _seo_inflect_nationality_acc(string $name): string
     $name = trim($name);
     if ($name === '') return $name;
     $low = function_exists('mb_strtolower') ? mb_strtolower($name, 'UTF-8') : strtolower($name);
+    if (preg_match('~ские$~u', $low)) return mb_substr($name, 0, -2, 'UTF-8') . 'ую';
+    if (preg_match('~ые$~u', $low))   return mb_substr($name, 0, -2, 'UTF-8') . 'ую';
+    if (preg_match('~ки$~u', $low))   return mb_substr($name, 0, -1, 'UTF-8') . 'у';
     if (preg_match('~ая$~u', $low)) return mb_substr($name, 0, -2, 'UTF-8') . 'ую';
     if (preg_match('~яя$~u', $low)) return mb_substr($name, 0, -2, 'UTF-8') . 'юю';
     if (preg_match('~а$~u',  $low)) return mb_substr($name, 0, -1, 'UTF-8') . 'у';
@@ -381,6 +401,10 @@ function _seo_inflect_nationality_gen(string $name): string
     $name = trim($name);
     if ($name === '') return $name;
     $low = function_exists('mb_strtolower') ? mb_strtolower($name, 'UTF-8') : strtolower($name);
+    if (preg_match('~ские$~u', $low)) return mb_substr($name, 0, -2, 'UTF-8') . 'их';
+    if (preg_match('~ые$~u', $low))   return mb_substr($name, 0, -2, 'UTF-8') . 'ых';
+    if (preg_match('~([чшжщ])ки$~u', $low)) return mb_substr($name, 0, -2, 'UTF-8') . 'ек';
+    if (preg_match('~ки$~u', $low)) return mb_substr($name, 0, -2, 'UTF-8') . 'ок';
     if (preg_match('~ая$~u', $low)) return mb_substr($name, 0, -2, 'UTF-8') . 'их';
     if (preg_match('~([чшжщ])ка$~u', $low, $m)) return mb_substr($name, 0, -2, 'UTF-8') . 'ек';
     if (preg_match('~ка$~u', $low)) return mb_substr($name, 0, -2, 'UTF-8') . 'ок';
@@ -411,7 +435,7 @@ function _seo_prepare_landing_extra($term, string $taxonomy, string $kind): arra
     if (in_array($kind, ['metro', 'rajon', 'nationality', 'uslugi'], true)) {
         $extra['count'] = _seo_count_models_by_term($term, $taxonomy);
         $price_num = _seo_min_price_num_by_term($term, $taxonomy);
-        $extra['price_txt'] = $price_num > 0 ? number_format_i18n($price_num) : '';
+        $extra['price_txt'] = _seo_format_meta_price($price_num);
     }
 
     return $extra;
@@ -605,8 +629,8 @@ function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array 
         $phrase = _seo_random_phrase_pack($term_id);
         $nat_gen = _seo_inflect_nationality_gen($cat_name);
         $template = function_exists('dosugmoskva24_seo_template_get_string')
-            ? dosugmoskva24_seo_template_get_string('nationality', 'description', '{verb} {nationality_name_gen} в Москве, {count} {count_word} доступно | анкеты проституток {nationality_name_gen} с проверенными фото | выезд прием 24/7')
-            : '{verb} {nationality_name_gen} в Москве, {count} {count_word} доступно | анкеты проституток {nationality_name_gen} с проверенными фото | выезд прием 24/7';
+            ? dosugmoskva24_seo_template_get_string('nationality', 'description', '{verb} {nationality_name_acc} в Москве, {count} {count_word} доступно | анкеты проституток {nationality_name_gen} с проверенными фото | выезд прием 24/7')
+            : '{verb} {nationality_name_acc} в Москве, {count} {count_word} доступно | анкеты проституток {nationality_name_gen} с проверенными фото | выезд прием 24/7';
         return function_exists('dosugmoskva24_seo_template_render')
             ? dosugmoskva24_seo_template_render($template, [
                 'name' => $cat_name,
@@ -728,7 +752,7 @@ function _seo_build_title(array $ctx): string
         $cat_name = _seo_decode_entities($cat_name);
 
         $price_num = _seo_min_price_num_by_term($term, $tax);
-        $price_txt = $price_num > 0 ? number_format_i18n($price_num) : '';
+        $price_txt = _seo_format_meta_price($price_num);
         $kind = _seo_landing_kind_by_taxonomy($tax);
         if ($kind !== '') {
             $extra = _seo_prepare_landing_extra($term, $tax, $kind);
@@ -746,7 +770,7 @@ function _seo_build_title(array $ctx): string
             if ($kind !== '') {
                 $cat_name = _seo_decode_entities((string) $qo->name);
                 $price_num = _seo_min_price_num_by_term($qo, $tax);
-                $price_txt = $price_num > 0 ? number_format_i18n($price_num) : '';
+                $price_txt = _seo_format_meta_price($price_num);
                 $extra = _seo_prepare_landing_extra($qo, $tax, $kind);
                 $built = _seo_build_landing_title_by_kind($kind, $cat_name, $price_txt, $extra);
                 if ($built !== '') return $built;
@@ -939,7 +963,9 @@ function _seo_og_image(): array
 $ctx       = _seo_ctx();
 $title     = _seo_build_title($ctx);
 $descr     = _seo_build_descr($ctx);
+$title     = _seo_normalize_meta_text($title);
 $descr     = _seo_normalize_descr_text($descr);
+$descr     = _seo_normalize_meta_text($descr);
 
 if (!_seo_is_individualki_page($ctx) && !_seo_preserve_individualki_variants($ctx)) {
     $title = _seo_strip_individualki_mentions($title);
