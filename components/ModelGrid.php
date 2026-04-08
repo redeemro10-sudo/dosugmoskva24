@@ -421,7 +421,7 @@ function render_model_grid_with_filters()
   $is_tax_ctx       = is_tax() || (!empty($base_tax) && !$is_novye);
   if (!empty($is_paginated_page)) $is_tax_ctx = false;
 
-  if (!$append && !$is_tax_ctx && $total_pages > 1) {
+  if (!$append && $total_pages > 1) {
     $big            = 999999999;
     $pagination_base = str_replace((string)$big, '%#%', esc_url_raw(get_pagenum_link($big)));
     $pagination_links = paginate_links([
@@ -549,7 +549,7 @@ function render_model_grid_with_filters()
     if (!$append) echo '</ul>';
 
     /* ===== Пагинация HTML ===== */
-    if (!$append && !empty($pagination_links) && !$is_tax_ctx) : ?>
+    if (!$append && !empty($pagination_links)) : ?>
       <div id="mf-pagination" class="w-full flex flex-col items-center gap-3 mt-3 mb-4">
         <nav id="mf-pages" class="w-full flex justify-center" aria-label="Пагинация">
           <ul class="flex flex-wrap justify-center gap-2">
