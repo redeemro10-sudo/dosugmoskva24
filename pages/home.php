@@ -306,11 +306,21 @@ if ($is_district_context) {
                     break;
                 }
             }
-            $district_h1 = "Проститутки район {$district_name}";
+            $district_h1_template = function_exists('dosugmoskva24_seo_template_get_string')
+                ? dosugmoskva24_seo_template_get_string('rajon', 'h1', 'Проститутки район {district_name}')
+                : 'Проститутки район {district_name}';
+            $district_h1 = function_exists('dosugmoskva24_seo_template_render')
+                ? dosugmoskva24_seo_template_render($district_h1_template, ['name' => $district_name, 'district_name' => $district_name])
+                : "Проститутки район {$district_name}";
             $custom_h1_override = $district_h1;
             set_query_var('auto_h1', $district_h1);
             $GLOBALS['auto_h1'] = $district_h1;
-            $district_h2 = "Анкеты проституток в районе {$district_name}";
+            $district_h2_template = function_exists('dosugmoskva24_seo_template_get_string')
+                ? dosugmoskva24_seo_template_get_string('rajon', 'h2', 'Анкеты проституток в районе {district_name}')
+                : 'Анкеты проституток в районе {district_name}';
+            $district_h2 = function_exists('dosugmoskva24_seo_template_render')
+                ? dosugmoskva24_seo_template_render($district_h2_template, ['name' => $district_name, 'district_name' => $district_name])
+                : "Анкеты проституток в районе {$district_name}";
             set_query_var('auto_h2', $district_h2);
             $GLOBALS['auto_h2'] = $district_h2;
 
@@ -495,11 +505,21 @@ if ($is_metro_context) {
             }
             $models_count_text = number_format_i18n(max(0, $models_count));
 
-            $metro_h1 = "Проститутки у метро {$station_name}";
+            $metro_h1_template = function_exists('dosugmoskva24_seo_template_get_string')
+                ? dosugmoskva24_seo_template_get_string('metro', 'h1', 'Проститутки у метро {station_name}')
+                : 'Проститутки у метро {station_name}';
+            $metro_h1 = function_exists('dosugmoskva24_seo_template_render')
+                ? dosugmoskva24_seo_template_render($metro_h1_template, ['name' => $station_name, 'station_name' => $station_name])
+                : "Проститутки у метро {$station_name}";
             $custom_h1_override = $metro_h1;
             set_query_var('auto_h1', $metro_h1);
             $GLOBALS['auto_h1'] = $metro_h1;
-            $metro_h2 = "Анкеты проституток у метро {$station_name}";
+            $metro_h2_template = function_exists('dosugmoskva24_seo_template_get_string')
+                ? dosugmoskva24_seo_template_get_string('metro', 'h2', 'Анкеты проституток у метро {station_name}')
+                : 'Анкеты проституток у метро {station_name}';
+            $metro_h2 = function_exists('dosugmoskva24_seo_template_render')
+                ? dosugmoskva24_seo_template_render($metro_h2_template, ['name' => $station_name, 'station_name' => $station_name])
+                : "Анкеты проституток у метро {$station_name}";
             set_query_var('auto_h2', $metro_h2);
             $GLOBALS['auto_h2'] = $metro_h2;
 
@@ -802,12 +822,23 @@ if ($is_service_context) {
                 $service_count_text = $service_count_label . ' ' . $service_count_word;
             }
 
-            $service_h1 = "{$service_name} в Москве";
+            $service_h1_template = function_exists('dosugmoskva24_seo_template_get_string')
+                ? dosugmoskva24_seo_template_get_string('uslugi', 'h1', 'Проститутки с услугой {service_name} в Москве')
+                : 'Проститутки с услугой {service_name} в Москве';
+            $service_h1 = function_exists('dosugmoskva24_seo_template_render')
+                ? dosugmoskva24_seo_template_render($service_h1_template, ['name' => $service_name, 'service_name' => $service_name])
+                : "Проститутки с услугой {$service_name} в Москве";
             $custom_h1_override = $service_h1;
             set_query_var('auto_h1', $service_h1);
             $GLOBALS['auto_h1'] = $service_h1;
-            set_query_var('auto_h2', 'Анкеты проституток');
-            $GLOBALS['auto_h2'] = 'Анкеты проституток';
+            $service_h2_template = function_exists('dosugmoskva24_seo_template_get_string')
+                ? dosugmoskva24_seo_template_get_string('uslugi', 'h2', 'Анкеты проституток с услугой {service_name}')
+                : 'Анкеты проституток с услугой {service_name}';
+            $service_h2 = function_exists('dosugmoskva24_seo_template_render')
+                ? dosugmoskva24_seo_template_render($service_h2_template, ['name' => $service_name, 'service_name' => $service_name])
+                : "Анкеты проституток с услугой {$service_name}";
+            set_query_var('auto_h2', $service_h2);
+            $GLOBALS['auto_h2'] = $service_h2;
 
             $resolve_service_min_price = static function (string $meta_key, int $term_id): int {
                 $q = new WP_Query([

@@ -2,6 +2,7 @@
 
 // Подключение модуля защиты контактов от Google
 require_once get_template_directory() . '/security-contacts.php'; 
+require_once get_template_directory() . '/seo-template-admin.php';
 // Если файл положили в папку inc, то: . '/inc/security-contacts.php';
 
 add_action('wp_enqueue_scripts', function () {

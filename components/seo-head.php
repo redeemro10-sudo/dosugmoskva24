@@ -67,6 +67,23 @@ function _seo_is_individualki_page(array $ctx): bool
     return trim($pagename, '/') === 'individualki';
 }
 
+function _seo_preserve_individualki_variants(array $ctx): bool
+{
+    $post_type = (string) ($ctx['post_type'] ?? '');
+    if (in_array($post_type, ['metro', 'rajon', 'uslugi', 'nacionalnost'], true)) {
+        return true;
+    }
+
+    if (is_tax()) {
+        $qo = get_queried_object();
+        if ($qo instanceof WP_Term) {
+            return in_array((string) $qo->taxonomy, ['metro_tax', 'rayonu_tax', 'uslugi_tax', 'nationalnost_tax'], true);
+        }
+    }
+
+    return false;
+}
+
 function _seo_strip_individualki_mentions(string $s): string
 {
     if ($s === '') return '';
@@ -286,26 +303,41 @@ function _seo_landing_kind_by_taxonomy(string $taxonomy): string
 
 function _seo_random_phrase_vin(int $seed = 0): array
 {
-    $verbs = ['снять', 'заказать', 'вызвать'];
-    $nouns = ['проститутку', 'шлюху', 'индивидуалку'];
-    if ($seed > 0) {
-        $v = $verbs[$seed % 3];
-        $n = $nouns[((int) floor($seed / 3)) % 3];
-        return [$v, $n];
+    $phrase = _seo_random_phrase_pack($seed);
+    return [$phrase['verb'], $phrase['noun_acc']];
+}
+
+function _seo_random_phrase_pack(int $seed = 0): array
+{
+    if (function_exists('dosugmoskva24_seo_pick_phrase_variant')) {
+        return dosugmoskva24_seo_pick_phrase_variant($seed);
     }
-    return [$verbs[array_rand($verbs)], $nouns[array_rand($nouns)]];
+
+    $verbs = ['снять', 'заказать', 'вызвать'];
+    $noun_forms = [
+        ['acc' => 'проститутку', 'gen' => 'проституток', 'nom' => 'проститутки'],
+        ['acc' => 'шлюху', 'gen' => 'шлюх', 'nom' => 'шлюхи'],
+        ['acc' => 'индивидуалку', 'gen' => 'индивидуалок', 'nom' => 'индивидуалки'],
+    ];
+    $verb_index = $seed > 0 ? ($seed % count($verbs)) : array_rand($verbs);
+    $noun_index = $seed > 0 ? (((int) floor($seed / count($verbs))) % count($noun_forms)) : array_rand($noun_forms);
+
+    return [
+        'verb' => $verbs[$verb_index],
+        'noun_acc' => $noun_forms[$noun_index]['acc'],
+        'noun_gen' => $noun_forms[$noun_index]['gen'],
+        'noun_nom' => $noun_forms[$noun_index]['nom'],
+    ];
 }
 
 function _seo_random_verb(int $seed = 0): string
 {
-    $verbs = ['снять', 'заказать', 'вызвать'];
-    return $seed > 0 ? $verbs[$seed % 3] : $verbs[array_rand($verbs)];
+    return _seo_random_phrase_pack($seed)['verb'];
 }
 
 function _seo_random_noun_gen(int $seed = 0): string
 {
-    $nouns = ['проституток', 'шлюх', 'индивидуалок'];
-    return $seed > 0 ? $nouns[((int) floor($seed / 3)) % 3] : $nouns[array_rand($nouns)];
+    return _seo_random_phrase_pack($seed)['noun_gen'];
 }
 
 /** Родительный падеж ед.ч. для услуги (классический массаж → классического массажа). Грубая эвристика. */
@@ -366,29 +398,92 @@ function _seo_plural_anket(int $n): string
     return 'анкет';
 }
 
+function _seo_prepare_landing_extra($term, string $taxonomy, string $kind): array
+{
+    if (!$term || !($term instanceof WP_Term) || $taxonomy === '' || $kind === '') {
+        return [];
+    }
+
+    $extra = [
+        'term_id' => (int) $term->term_id,
+    ];
+
+    if (in_array($kind, ['metro', 'rajon', 'nationality', 'uslugi'], true)) {
+        $extra['count'] = _seo_count_models_by_term($term, $taxonomy);
+        $price_num = _seo_min_price_num_by_term($term, $taxonomy);
+        $extra['price_txt'] = $price_num > 0 ? number_format_i18n($price_num) : '';
+    }
+
+    return $extra;
+}
+
 function _seo_build_landing_title_by_kind(string $kind, string $cat_name, string $price_txt = '', array $extra = []): string
 {
     if ($kind === 'metro') {
         $term_id = (int) ($extra['term_id'] ?? 0);
         $count   = (int) ($extra['count'] ?? 0);
-        [$verb, $noun] = _seo_random_phrase_vin($term_id);
-        $count_part = $count > 0 ? " | {$count} " . _seo_plural_anket($count) : '';
-        return "Проститутки {$cat_name} {$verb} {$noun} у метро {$cat_name}{$count_part}";
+        $phrase  = _seo_random_phrase_pack($term_id);
+        $template = function_exists('dosugmoskva24_seo_template_get_string')
+            ? dosugmoskva24_seo_template_get_string('metro', 'title', 'Проститутки {station_name} - {verb} {noun_acc} у метро {station_name} | {count} {count_word}')
+            : 'Проститутки {station_name} - {verb} {noun_acc} у метро {station_name} | {count} {count_word}';
+        return function_exists('dosugmoskva24_seo_template_render')
+            ? dosugmoskva24_seo_template_render($template, [
+                'name' => $cat_name,
+                'station_name' => $cat_name,
+                'verb' => $phrase['verb'],
+                'noun_acc' => $phrase['noun_acc'],
+                'noun_gen' => $phrase['noun_gen'],
+                'noun_nom' => $phrase['noun_nom'],
+                'count' => $count,
+                'count_word' => _seo_plural_anket($count),
+                'price' => $price_txt,
+            ])
+            : "Проститутки {$cat_name} - {$phrase['verb']} {$phrase['noun_acc']} у метро {$cat_name} | {$count} " . _seo_plural_anket($count);
     }
 
     if ($kind === 'rajon') {
         $term_id = (int) ($extra['term_id'] ?? 0);
         $count   = (int) ($extra['count'] ?? 0);
-        [$verb, $noun] = _seo_random_phrase_vin($term_id);
-        $count_part = $count > 0 ? " | доступно {$count} " . _seo_plural_anket($count) : '';
-        return "Проститутки {$cat_name} — {$verb} {$noun} в районе {$cat_name} 24/7{$count_part}";
+        $phrase  = _seo_random_phrase_pack($term_id);
+        $template = function_exists('dosugmoskva24_seo_template_get_string')
+            ? dosugmoskva24_seo_template_get_string('rajon', 'title', 'Проститутки {district_name} - {verb} {noun_acc} в районе {district_name} 24/7 | доступно {count} {count_word}')
+            : 'Проститутки {district_name} - {verb} {noun_acc} в районе {district_name} 24/7 | доступно {count} {count_word}';
+        return function_exists('dosugmoskva24_seo_template_render')
+            ? dosugmoskva24_seo_template_render($template, [
+                'name' => $cat_name,
+                'district_name' => $cat_name,
+                'verb' => $phrase['verb'],
+                'noun_acc' => $phrase['noun_acc'],
+                'noun_gen' => $phrase['noun_gen'],
+                'noun_nom' => $phrase['noun_nom'],
+                'count' => $count,
+                'count_word' => _seo_plural_anket($count),
+                'price' => $price_txt,
+            ])
+            : "Проститутки {$cat_name} - {$phrase['verb']} {$phrase['noun_acc']} в районе {$cat_name} 24/7 | доступно {$count} " . _seo_plural_anket($count);
     }
 
     if ($kind === 'uslugi') {
         $term_id = (int) ($extra['term_id'] ?? 0);
-        [$verb, $noun] = _seo_random_phrase_vin($term_id);
+        $phrase = _seo_random_phrase_pack($term_id);
         $usl_gen = _seo_inflect_usluga_gen($cat_name);
-        return "Проститутки для {$usl_gen} в Москве, {$verb} {$noun} для услуги {$cat_name} в Москве 24/7";
+        $template = function_exists('dosugmoskva24_seo_template_get_string')
+            ? dosugmoskva24_seo_template_get_string('uslugi', 'title', 'Проститутки для {service_name_gen} в Москве, {verb} {noun_acc} для услуги {service_name} в Москве 24/7')
+            : 'Проститутки для {service_name_gen} в Москве, {verb} {noun_acc} для услуги {service_name} в Москве 24/7';
+        return function_exists('dosugmoskva24_seo_template_render')
+            ? dosugmoskva24_seo_template_render($template, [
+                'name' => $cat_name,
+                'service_name' => $cat_name,
+                'service_name_gen' => $usl_gen,
+                'verb' => $phrase['verb'],
+                'noun_acc' => $phrase['noun_acc'],
+                'noun_gen' => $phrase['noun_gen'],
+                'noun_nom' => $phrase['noun_nom'],
+                'count' => (int) ($extra['count'] ?? 0),
+                'count_word' => _seo_plural_anket((int) ($extra['count'] ?? 0)),
+                'price' => $price_txt,
+            ])
+            : "Проститутки для {$usl_gen} в Москве, {$phrase['verb']} {$phrase['noun_acc']} для услуги {$cat_name} в Москве 24/7";
     }
 
     if ($kind === 'appearance') {
@@ -397,10 +492,26 @@ function _seo_build_landing_title_by_kind(string $kind, string $cat_name, string
 
     if ($kind === 'nationality') {
         $term_id = (int) ($extra['term_id'] ?? 0);
-        [$verb, $noun] = _seo_random_phrase_vin($term_id);
+        $phrase = _seo_random_phrase_pack($term_id);
         $nat_acc = _seo_inflect_nationality_acc($cat_name);
-        $price_part = $price_txt !== '' ? " от {$price_txt} рублей" : '';
-        return "Проститутки {$cat_name} Москвы — {$verb} {$noun} {$nat_acc}{$price_part}";
+        $template = function_exists('dosugmoskva24_seo_template_get_string')
+            ? dosugmoskva24_seo_template_get_string('nationality', 'title', 'Проститутки {nationality_name} Москвы - {verb} {noun_acc} {nationality_name_acc} от {price} рублей')
+            : 'Проститутки {nationality_name} Москвы - {verb} {noun_acc} {nationality_name_acc} от {price} рублей';
+        return function_exists('dosugmoskva24_seo_template_render')
+            ? dosugmoskva24_seo_template_render($template, [
+                'name' => $cat_name,
+                'nationality_name' => $cat_name,
+                'nationality_name_acc' => $nat_acc,
+                'nationality_name_gen' => _seo_inflect_nationality_gen($cat_name),
+                'verb' => $phrase['verb'],
+                'noun_acc' => $phrase['noun_acc'],
+                'noun_gen' => $phrase['noun_gen'],
+                'noun_nom' => $phrase['noun_nom'],
+                'count' => (int) ($extra['count'] ?? 0),
+                'count_word' => _seo_plural_anket((int) ($extra['count'] ?? 0)),
+                'price' => $price_txt,
+            ])
+            : "Проститутки {$cat_name} Москвы - {$phrase['verb']} {$phrase['noun_acc']} {$nat_acc} от {$price_txt} рублей";
     }
 
     if ($kind === 'price') {
@@ -418,30 +529,70 @@ function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array 
     if ($kind === 'metro') {
         $term_id   = (int) ($extra['term_id'] ?? 0);
         $price_txt = (string) ($extra['price_txt'] ?? '');
-        [$verb, $noun] = _seo_random_phrase_vin($term_id);
-        $price_part = $price_txt !== '' ? " от {$price_txt} рублей" : '';
-        return "Проститутки у станции метро {$cat_name}, {$verb} {$noun}{$price_part} с выездом или приемом у себя 24/7";
+        $phrase = _seo_random_phrase_pack($term_id);
+        $template = function_exists('dosugmoskva24_seo_template_get_string')
+            ? dosugmoskva24_seo_template_get_string('metro', 'description', 'Проститутки у станции метро {station_name}, {verb} проститутку от {price} рублей с выездом или приемом у себя 24/7')
+            : 'Проститутки у станции метро {station_name}, {verb} проститутку от {price} рублей с выездом или приемом у себя 24/7';
+        return function_exists('dosugmoskva24_seo_template_render')
+            ? dosugmoskva24_seo_template_render($template, [
+                'name' => $cat_name,
+                'station_name' => $cat_name,
+                'verb' => $phrase['verb'],
+                'noun_acc' => $phrase['noun_acc'],
+                'noun_gen' => $phrase['noun_gen'],
+                'noun_nom' => $phrase['noun_nom'],
+                'count' => (int) ($extra['count'] ?? 0),
+                'count_word' => _seo_plural_anket((int) ($extra['count'] ?? 0)),
+                'price' => $price_txt,
+            ])
+            : "Проститутки у станции метро {$cat_name}, {$phrase['verb']} проститутку от {$price_txt} рублей с выездом или приемом у себя 24/7";
     }
 
     if ($kind === 'rajon') {
         $term_id   = (int) ($extra['term_id'] ?? 0);
         $price_txt = (string) ($extra['price_txt'] ?? '');
-        $verb = _seo_random_verb($term_id);
-        $noun_gen = _seo_random_noun_gen($term_id);
-        $price_part = $price_txt !== '' ? " от {$price_txt} рублей за час" : '';
-        return "Проститутки в районе {$cat_name} | {$verb}{$price_part}, проверенные анкеты {$noun_gen} в районе {$cat_name}";
+        $phrase = _seo_random_phrase_pack($term_id);
+        $template = function_exists('dosugmoskva24_seo_template_get_string')
+            ? dosugmoskva24_seo_template_get_string('rajon', 'description', 'Проститутки в районе {district_name} | {verb} от {price} рублей за час, проверенные анкеты {noun_gen} в районе {district_name}')
+            : 'Проститутки в районе {district_name} | {verb} от {price} рублей за час, проверенные анкеты {noun_gen} в районе {district_name}';
+        return function_exists('dosugmoskva24_seo_template_render')
+            ? dosugmoskva24_seo_template_render($template, [
+                'name' => $cat_name,
+                'district_name' => $cat_name,
+                'verb' => $phrase['verb'],
+                'noun_acc' => $phrase['noun_acc'],
+                'noun_gen' => $phrase['noun_gen'],
+                'noun_nom' => $phrase['noun_nom'],
+                'count' => (int) ($extra['count'] ?? 0),
+                'count_word' => _seo_plural_anket((int) ($extra['count'] ?? 0)),
+                'price' => $price_txt,
+            ])
+            : "Проститутки в районе {$cat_name} | {$phrase['verb']} от {$price_txt} рублей за час, проверенные анкеты {$phrase['noun_gen']} в районе {$cat_name}";
     }
 
     if ($kind === 'uslugi') {
         $term_id   = (int) ($extra['term_id'] ?? 0);
         $count     = (int) ($extra['count'] ?? 0);
         $price_txt = (string) ($extra['price_txt'] ?? '');
-        $noun_nom_pool = ['проститутки', 'шлюхи', 'индивидуалки'];
-        $noun_nom = $term_id > 0 ? $noun_nom_pool[((int) floor($term_id / 3)) % 3] : $noun_nom_pool[array_rand($noun_nom_pool)];
+        $phrase = _seo_random_phrase_pack($term_id);
         $usl_gen = _seo_inflect_usluga_gen($cat_name);
-        $count_part = $count > 0 ? " {$count} проверенных " . _seo_plural_anket($count) : ' проверенные анкеты';
-        $price_part = $price_txt !== '' ? " от {$price_txt} рублей за час" : '';
-        return "{$cat_name} в Москве{$count_part} с выездом и приемом у себя, лучшие {$noun_nom} для {$usl_gen} в Москве{$price_part}";
+        $template = function_exists('dosugmoskva24_seo_template_get_string')
+            ? dosugmoskva24_seo_template_get_string('uslugi', 'description', '{service_name} в Москве {count} проверенных {count_word} с выездом и приемом у себя, лучшие {noun_nom} для {service_name_gen} в Москве от {price} рублей за час')
+            : '{service_name} в Москве {count} проверенных {count_word} с выездом и приемом у себя, лучшие {noun_nom} для {service_name_gen} в Москве от {price} рублей за час';
+        return function_exists('dosugmoskva24_seo_template_render')
+            ? dosugmoskva24_seo_template_render($template, [
+                'name' => $cat_name,
+                'service_name' => $cat_name,
+                'service_name_gen' => $usl_gen,
+                'verb' => $phrase['verb'],
+                'noun_acc' => $phrase['noun_acc'],
+                'noun_gen' => $phrase['noun_gen'],
+                'noun_nom' => $phrase['noun_nom'],
+                'count' => $count,
+                'count_word' => _seo_plural_anket($count),
+                'price' => $price_txt,
+            ])
+            : "{$cat_name} в Москве {$count} проверенных " . _seo_plural_anket($count) . " с выездом и приемом у себя, лучшие {$phrase['noun_nom']} для {$usl_gen} в Москве от {$price_txt} рублей за час";
     }
 
     if ($kind === 'appearance') {
@@ -451,10 +602,26 @@ function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array 
     if ($kind === 'nationality') {
         $term_id = (int) ($extra['term_id'] ?? 0);
         $count   = (int) ($extra['count'] ?? 0);
-        [$verb, $noun] = _seo_random_phrase_vin($term_id);
+        $phrase = _seo_random_phrase_pack($term_id);
         $nat_gen = _seo_inflect_nationality_gen($cat_name);
-        $count_part = $count > 0 ? " {$count} " . _seo_plural_anket($count) . ' доступно' : '';
-        return "{$verb} {$nat_gen} в Москве,{$count_part} | анкеты проституток {$nat_gen} с проверенными фото | выезд прием 24/7";
+        $template = function_exists('dosugmoskva24_seo_template_get_string')
+            ? dosugmoskva24_seo_template_get_string('nationality', 'description', '{verb} {nationality_name_gen} в Москве, {count} {count_word} доступно | анкеты проституток {nationality_name_gen} с проверенными фото | выезд прием 24/7')
+            : '{verb} {nationality_name_gen} в Москве, {count} {count_word} доступно | анкеты проституток {nationality_name_gen} с проверенными фото | выезд прием 24/7';
+        return function_exists('dosugmoskva24_seo_template_render')
+            ? dosugmoskva24_seo_template_render($template, [
+                'name' => $cat_name,
+                'nationality_name' => $cat_name,
+                'nationality_name_acc' => _seo_inflect_nationality_acc($cat_name),
+                'nationality_name_gen' => $nat_gen,
+                'verb' => $phrase['verb'],
+                'noun_acc' => $phrase['noun_acc'],
+                'noun_gen' => $phrase['noun_gen'],
+                'noun_nom' => $phrase['noun_nom'],
+                'count' => $count,
+                'count_word' => _seo_plural_anket($count),
+                'price' => (string) ($extra['price_txt'] ?? ''),
+            ])
+            : "{$phrase['verb']} {$nat_gen} в Москве, {$count} " . _seo_plural_anket($count) . " доступно | анкеты проституток {$nat_gen} с проверенными фото | выезд прием 24/7";
     }
 
     if ($kind === 'price') {
@@ -564,11 +731,7 @@ function _seo_build_title(array $ctx): string
         $price_txt = $price_num > 0 ? number_format_i18n($price_num) : '';
         $kind = _seo_landing_kind_by_taxonomy($tax);
         if ($kind !== '') {
-            $extra = [];
-            if (($kind === 'metro' || $kind === 'rajon') && $term) {
-                $extra['term_id'] = (int) $term->term_id;
-                $extra['count']   = _seo_count_models_by_term($term, $tax);
-            }
+            $extra = _seo_prepare_landing_extra($term, $tax, $kind);
             $built = _seo_build_landing_title_by_kind($kind, $cat_name, $price_txt, $extra);
             if ($built !== '') return $built;
         }
@@ -584,11 +747,7 @@ function _seo_build_title(array $ctx): string
                 $cat_name = _seo_decode_entities((string) $qo->name);
                 $price_num = _seo_min_price_num_by_term($qo, $tax);
                 $price_txt = $price_num > 0 ? number_format_i18n($price_num) : '';
-                $extra = [];
-                if ($kind === 'metro' || $kind === 'rajon' || $kind === 'nationality' || $kind === 'uslugi') {
-                    $extra['term_id'] = (int) $qo->term_id;
-                    $extra['count']   = _seo_count_models_by_term($qo, $tax);
-                }
+                $extra = _seo_prepare_landing_extra($qo, $tax, $kind);
                 $built = _seo_build_landing_title_by_kind($kind, $cat_name, $price_txt, $extra);
                 if ($built !== '') return $built;
             }
@@ -705,12 +864,7 @@ function _seo_build_descr(array $ctx): string
         $cat_name = $term ? _seo_decode_entities((string) $term->name) : _seo_decode_entities(get_the_title($ctx['id']));
         $kind = _seo_landing_kind_by_taxonomy($tax);
         if ($kind !== '') {
-            $extra = [];
-            if (($kind === 'metro' || $kind === 'rajon') && $term) {
-                $price_num = _seo_min_price_num_by_term($term, $tax);
-                $extra['term_id']   = (int) $term->term_id;
-                $extra['price_txt'] = $price_num > 0 ? number_format_i18n($price_num) : '';
-            }
+            $extra = _seo_prepare_landing_extra($term, $tax, $kind);
             return _seo_trim_170(_seo_build_landing_descr_by_kind($kind, $cat_name, $extra));
         }
     }
@@ -721,12 +875,7 @@ function _seo_build_descr(array $ctx): string
             $kind = _seo_landing_kind_by_taxonomy((string) $qo->taxonomy);
             if ($kind !== '') {
                 $cat_name = _seo_decode_entities((string) $qo->name);
-                $extra = [];
-                if ($kind === 'metro' || $kind === 'rajon' || $kind === 'nationality' || $kind === 'uslugi') {
-                    $price_num = _seo_min_price_num_by_term($qo, (string) $qo->taxonomy);
-                    $extra['term_id']   = (int) $qo->term_id;
-                    $extra['price_txt'] = $price_num > 0 ? number_format_i18n($price_num) : '';
-                }
+                $extra = _seo_prepare_landing_extra($qo, (string) $qo->taxonomy, $kind);
                 return _seo_trim_170(_seo_build_landing_descr_by_kind($kind, $cat_name, $extra));
             }
         }
@@ -792,7 +941,7 @@ $title     = _seo_build_title($ctx);
 $descr     = _seo_build_descr($ctx);
 $descr     = _seo_normalize_descr_text($descr);
 
-if (!_seo_is_individualki_page($ctx)) {
+if (!_seo_is_individualki_page($ctx) && !_seo_preserve_individualki_variants($ctx)) {
     $title = _seo_strip_individualki_mentions($title);
     $descr = _seo_strip_individualki_mentions($descr);
 }

@@ -196,21 +196,76 @@ if ($h2 === '' && function_exists('get_field') && $id) {
     $h2 = (string) get_field('h2_title', $id);
 }
 
-// Принудительная авто-генерация H2 для nationalnost (даже если H1 пришёл из ACF).
+// Принудительная авто-генерация H1/H2 для metro.
+if ($context === 'metro' && $title_piece !== '') {
+    $h1_template = function_exists('dosugmoskva24_seo_template_get_string')
+        ? dosugmoskva24_seo_template_get_string('metro', 'h1', 'Проститутки у метро {station_name}')
+        : 'Проститутки у метро {station_name}';
+    $h2_template = function_exists('dosugmoskva24_seo_template_get_string')
+        ? dosugmoskva24_seo_template_get_string('metro', 'h2', 'Анкеты проституток у метро {station_name}')
+        : 'Анкеты проституток у метро {station_name}';
+    $h1 = function_exists('dosugmoskva24_seo_template_render')
+        ? dosugmoskva24_seo_template_render($h1_template, ['name' => $title_piece, 'station_name' => $title_piece])
+        : "Проститутки у метро {$title_piece}";
+    $h2 = function_exists('dosugmoskva24_seo_template_render')
+        ? dosugmoskva24_seo_template_render($h2_template, ['name' => $title_piece, 'station_name' => $title_piece])
+        : "Анкеты проституток у метро {$title_piece}";
+}
+
+// Принудительная авто-генерация H1/H2 для rajon.
+if ($context === 'rajon' && $title_piece !== '') {
+    $h1_template = function_exists('dosugmoskva24_seo_template_get_string')
+        ? dosugmoskva24_seo_template_get_string('rajon', 'h1', 'Проститутки район {district_name}')
+        : 'Проститутки район {district_name}';
+    $h2_template = function_exists('dosugmoskva24_seo_template_get_string')
+        ? dosugmoskva24_seo_template_get_string('rajon', 'h2', 'Анкеты проституток в районе {district_name}')
+        : 'Анкеты проституток в районе {district_name}';
+    $h1 = function_exists('dosugmoskva24_seo_template_render')
+        ? dosugmoskva24_seo_template_render($h1_template, ['name' => $title_piece, 'district_name' => $title_piece])
+        : "Проститутки район {$title_piece}";
+    $h2 = function_exists('dosugmoskva24_seo_template_render')
+        ? dosugmoskva24_seo_template_render($h2_template, ['name' => $title_piece, 'district_name' => $title_piece])
+        : "Анкеты проституток в районе {$title_piece}";
+}
+
+// Принудительная авто-генерация H1/H2 для nationalnost.
 if ($context === 'nationalnost' && $title_piece !== '') {
     $nat_gen_force = function_exists('_seo_inflect_nationality_gen')
         ? _seo_inflect_nationality_gen($title_piece)
         : $title_piece;
-    $h2 = "Анкеты проституток {$nat_gen_force}";
-    if ($h1 === '' || stripos($h1, 'в Москва') !== false) {
-        $h1 = "Проститутки {$title_piece} в Москве";
-    }
+    $h1_template = function_exists('dosugmoskva24_seo_template_get_string')
+        ? dosugmoskva24_seo_template_get_string('nationality', 'h1', 'Проститутки {nationality_name} в Москве')
+        : 'Проститутки {nationality_name} в Москве';
+    $h2_template = function_exists('dosugmoskva24_seo_template_get_string')
+        ? dosugmoskva24_seo_template_get_string('nationality', 'h2', 'Анкеты проституток {nationality_name_gen}')
+        : 'Анкеты проституток {nationality_name_gen}';
+    $vars = [
+        'name' => $title_piece,
+        'nationality_name' => $title_piece,
+        'nationality_name_gen' => $nat_gen_force,
+    ];
+    $h1 = function_exists('dosugmoskva24_seo_template_render')
+        ? dosugmoskva24_seo_template_render($h1_template, $vars)
+        : "Проститутки {$title_piece} в Москве";
+    $h2 = function_exists('dosugmoskva24_seo_template_render')
+        ? dosugmoskva24_seo_template_render($h2_template, $vars)
+        : "Анкеты проституток {$nat_gen_force}";
 }
 
 // Принудительная авто-генерация H1/H2 для uslugi (перебивает ACF).
 if ($context === 'uslugi' && $title_piece !== '') {
-    $h1 = "Проститутки с услугой {$title_piece} в Москве";
-    $h2 = "Анкеты проституток с услугой {$title_piece}";
+    $h1_template = function_exists('dosugmoskva24_seo_template_get_string')
+        ? dosugmoskva24_seo_template_get_string('uslugi', 'h1', 'Проститутки с услугой {service_name} в Москве')
+        : 'Проститутки с услугой {service_name} в Москве';
+    $h2_template = function_exists('dosugmoskva24_seo_template_get_string')
+        ? dosugmoskva24_seo_template_get_string('uslugi', 'h2', 'Анкеты проституток с услугой {service_name}')
+        : 'Анкеты проституток с услугой {service_name}';
+    $h1 = function_exists('dosugmoskva24_seo_template_render')
+        ? dosugmoskva24_seo_template_render($h1_template, ['name' => $title_piece, 'service_name' => $title_piece])
+        : "Проститутки с услугой {$title_piece} в Москве";
+    $h2 = function_exists('dosugmoskva24_seo_template_render')
+        ? dosugmoskva24_seo_template_render($h2_template, ['name' => $title_piece, 'service_name' => $title_piece])
+        : "Анкеты проституток с услугой {$title_piece}";
 }
 
 $h1 = _auto_heading_clean((string) $h1);
