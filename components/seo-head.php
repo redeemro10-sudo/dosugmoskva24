@@ -170,6 +170,35 @@ function _seo_find_term_by_slug(string $taxonomy, string $slug)
     return ($t && !is_wp_error($t)) ? $t : null;
 }
 
+function _seo_resolve_landing_term(array $ctx, string $taxonomy)
+{
+    $base_tax = get_query_var('base_tax');
+    if (is_array($base_tax) && !empty($base_tax['taxonomy']) && (string) $base_tax['taxonomy'] === $taxonomy && !empty($base_tax['terms'])) {
+        $term_id = (int) ((array) $base_tax['terms'])[0];
+        if ($term_id > 0) {
+            $term = get_term($term_id, $taxonomy);
+            if ($term instanceof WP_Term && !is_wp_error($term)) {
+                return $term;
+            }
+        }
+    }
+
+    $slug = (string) ($ctx['slug'] ?? '');
+    if ($slug !== '') {
+        $term = _seo_find_term_by_slug($taxonomy, $slug);
+        if ($term instanceof WP_Term && !is_wp_error($term)) {
+            return $term;
+        }
+    }
+
+    $obj = $ctx['obj'] ?? null;
+    if ($obj instanceof WP_Term && (string) $obj->taxonomy === $taxonomy) {
+        return $obj;
+    }
+
+    return null;
+}
+
 /** Посчитать количество анкет models, привязанных к терму */
 function _seo_count_models_by_term($term, string $taxonomy): int
 {
@@ -759,7 +788,7 @@ function _seo_build_title(array $ctx): string
     // Иерархические "страничные" CPT
     if ($ctx['is_singular'] && $pt && isset($tx_map[$pt]) && $ctx['id']) {
         $tax = $tx_map[$pt];
-        $term = _seo_find_term_by_slug($tax, $slug);
+        $term = _seo_resolve_landing_term($ctx, $tax);
         $cat_name = $term ? $term->name : get_the_title($ctx['id']);
         $cat_name = _seo_decode_entities($cat_name);
 
@@ -895,8 +924,7 @@ function _seo_build_descr(array $ctx): string
         if ($d !== '') return _seo_trim_170($d);
 
         $tax = $tx_map[$pt];
-        $slug = $ctx['slug'];
-        $term = _seo_find_term_by_slug($tax, $slug);
+        $term = _seo_resolve_landing_term($ctx, $tax);
         $cat_name = $term ? _seo_decode_entities((string) $term->name) : _seo_decode_entities(get_the_title($ctx['id']));
         $kind = _seo_landing_kind_by_taxonomy($tax);
         if ($kind !== '') {
