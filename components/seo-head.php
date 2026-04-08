@@ -285,6 +285,69 @@ function _seo_count_models_by_term($term, string $taxonomy): int
     return $n;
 }
 
+/** Проверка: будет ли модель реально показана в каталоге */
+function _seo_is_renderable_model(int $post_id): bool
+{
+    if ($post_id <= 0) return false;
+
+    $name        = get_post_meta($post_id, 'name', true) ?: get_the_title($post_id);
+    $raw_gallery = get_post_meta($post_id, 'photo', true);
+    if (empty($name) || empty($raw_gallery)) return false;
+
+    $gallery = [];
+    if (is_array($raw_gallery)) {
+        if (isset($raw_gallery['ID'])) {
+            $gallery = [$raw_gallery];
+        } else {
+            foreach ($raw_gallery as $item) {
+                if (is_array($item) || is_numeric($item)) $gallery[] = $item;
+            }
+        }
+    } elseif (is_numeric($raw_gallery)) {
+        $gallery = [(int) $raw_gallery];
+    }
+
+    return !empty($gallery);
+}
+
+/** Посчитать количество анкет, реально отображаемых на текущей странице каталога */
+function _seo_count_models_on_page_by_term($term, string $taxonomy, int $paged = 1, int $per_page = 48): int
+{
+    if (!$term) return 0;
+
+    $tax_query = [[
+        'taxonomy' => $taxonomy,
+        'field'    => 'term_id',
+        'terms'    => [(int) $term->term_id],
+        'operator' => 'IN',
+    ]];
+
+    if ($taxonomy === 'nationalnost_tax') {
+        $tax_query[0]['include_children'] = false;
+    }
+
+    $q = new WP_Query([
+        'post_type'      => 'models',
+        'post_status'    => 'publish',
+        'posts_per_page' => max(1, $per_page),
+        'paged'          => max(1, $paged),
+        'fields'         => 'ids',
+        'no_found_rows'  => true,
+        'orderby'        => ['date' => 'DESC', 'ID' => 'DESC'],
+        'tax_query'      => $tax_query,
+    ]);
+
+    $count = 0;
+    foreach ((array) $q->posts as $post_id) {
+        if (_seo_is_renderable_model((int) $post_id)) {
+            $count++;
+        }
+    }
+
+    wp_reset_postdata();
+    return $count;
+}
+
 /** Найти минимальную цену среди моделей, привязанных к терму, и вернуть её как строку */
 function _seo_min_price_label_by_term($term, string $taxonomy): string
 {
@@ -531,6 +594,8 @@ function _seo_prepare_landing_extra($term, string $taxonomy, string $kind): arra
 
     if (in_array($kind, ['metro', 'rajon', 'nationality', 'uslugi'], true)) {
         $extra['count'] = _seo_count_models_by_term($term, $taxonomy);
+        $paged = max(1, (int) get_query_var('paged'), (int) get_query_var('page'));
+        $extra['page_count'] = _seo_count_models_on_page_by_term($term, $taxonomy, $paged, 48);
         $price_num = _seo_min_price_num_by_term($term, $taxonomy);
         $extra['price_txt'] = _seo_format_meta_price($price_num);
     }
@@ -647,6 +712,8 @@ function _seo_build_landing_title_by_kind(string $kind, string $cat_name, string
 
 function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array $extra = []): string
 {
+    $count_for_description = (int) ($extra['page_count'] ?? ($extra['count'] ?? 0));
+
     if ($kind === 'metro') {
         $term_id   = (int) ($extra['term_id'] ?? 0);
         $price_txt = (string) ($extra['price_txt'] ?? '');
@@ -662,8 +729,8 @@ function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array 
                 'noun_acc' => $phrase['noun_acc'],
                 'noun_gen' => $phrase['noun_gen'],
                 'noun_nom' => $phrase['noun_nom'],
-                'count' => (int) ($extra['count'] ?? 0),
-                'count_word' => _seo_plural_anket((int) ($extra['count'] ?? 0)),
+                'count' => $count_for_description,
+                'count_word' => _seo_plural_anket($count_for_description),
                 'price' => $price_txt,
             ])
             : "Проститутки у станции метро {$cat_name}, {$phrase['verb']} проститутку от {$price_txt} рублей с выездом или приемом у себя 24/7";
@@ -684,8 +751,8 @@ function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array 
                 'noun_acc' => $phrase['noun_acc'],
                 'noun_gen' => $phrase['noun_gen'],
                 'noun_nom' => $phrase['noun_nom'],
-                'count' => (int) ($extra['count'] ?? 0),
-                'count_word' => _seo_plural_anket((int) ($extra['count'] ?? 0)),
+                'count' => $count_for_description,
+                'count_word' => _seo_plural_anket($count_for_description),
                 'price' => $price_txt,
             ])
             : "Проститутки в районе {$cat_name} | {$phrase['verb']} от {$price_txt} рублей за час, проверенные анкеты {$phrase['noun_gen']} в районе {$cat_name}";
@@ -693,7 +760,7 @@ function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array 
 
     if ($kind === 'uslugi') {
         $term_id   = (int) ($extra['term_id'] ?? 0);
-        $count     = (int) ($extra['count'] ?? 0);
+        $count     = $count_for_description;
         $price_txt = (string) ($extra['price_txt'] ?? '');
         $phrase = _seo_random_phrase_pack($term_id);
         $usl_gen = _seo_inflect_usluga_gen($cat_name);
@@ -722,7 +789,7 @@ function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array 
 
     if ($kind === 'nationality') {
         $term_id = (int) ($extra['term_id'] ?? 0);
-        $count   = (int) ($extra['count'] ?? 0);
+        $count   = $count_for_description;
         $phrase = _seo_random_phrase_pack($term_id);
         $nat_gen = _seo_inflect_nationality_gen($cat_name);
         $template = function_exists('dosugmoskva24_seo_template_get_string')
