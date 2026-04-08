@@ -202,18 +202,48 @@ function _seo_resolve_landing_term(array $ctx, string $taxonomy)
 function _seo_resolve_base_tax_landing(array $ctx): array
 {
     $base_tax = get_query_var('base_tax');
-    if (!is_array($base_tax) || empty($base_tax['taxonomy'])) {
+    $taxonomy = '';
+    $term = null;
+
+    if (is_array($base_tax) && !empty($base_tax['taxonomy'])) {
+        $taxonomy = (string) $base_tax['taxonomy'];
+        $term = _seo_resolve_landing_term($ctx, $taxonomy);
+    }
+
+    if (($taxonomy === '' || !$term instanceof WP_Term || is_wp_error($term)) && !empty($_SERVER['REQUEST_URI'])) {
+        $request_path = trim((string) parse_url((string) $_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+        $segments = $request_path !== '' ? explode('/', $request_path) : [];
+        if (count($segments) >= 2) {
+            $base = (string) ($segments[0] ?? '');
+            $term_slug = (string) ($segments[1] ?? '');
+            $base_to_taxonomy = [
+                'services' => 'uslugi_tax',
+                'rajony' => 'rayonu_tax',
+                'metro' => 'metro_tax',
+                'price' => 'price_tax',
+                'vozrast' => 'vozrast_tax',
+                'nationalnost' => 'nationalnost_tax',
+                'ves' => 'ves_tax',
+                'cvet-volos' => 'cvet-volos_tax',
+                'rost' => 'rost_tax',
+                'grud' => 'grud_tax',
+            ];
+            if (isset($base_to_taxonomy[$base])) {
+                $taxonomy = $base_to_taxonomy[$base];
+                $maybe_term = get_term_by('slug', sanitize_title($term_slug), $taxonomy);
+                if ($maybe_term instanceof WP_Term && !is_wp_error($maybe_term)) {
+                    $term = $maybe_term;
+                }
+            }
+        }
+    }
+
+    if ($taxonomy === '' || !$term instanceof WP_Term || is_wp_error($term)) {
         return [];
     }
 
-    $taxonomy = (string) $base_tax['taxonomy'];
     $kind = _seo_landing_kind_by_taxonomy($taxonomy);
     if ($kind === '') {
-        return [];
-    }
-
-    $term = _seo_resolve_landing_term($ctx, $taxonomy);
-    if (!$term instanceof WP_Term || is_wp_error($term)) {
         return [];
     }
 
