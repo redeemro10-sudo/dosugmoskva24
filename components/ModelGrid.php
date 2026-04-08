@@ -196,18 +196,26 @@ function render_model_grid_with_filters()
         }
       }
       if (!empty($vals)) {
-        $tax_query[] = ['taxonomy' => $tx, 'field' => 'slug', 'terms' => $vals, 'operator' => 'IN'];
+        $clause = ['taxonomy' => $tx, 'field' => 'slug', 'terms' => $vals, 'operator' => 'IN'];
+        if ($tx === 'nationalnost_tax') {
+          $clause['include_children'] = false;
+        }
+        $tax_query[] = $clause;
       }
     }
 
     // Base tax — добавляем первым
     if (!empty($base_tax)) {
-      array_unshift($tax_query, [
+      $base_tax_clause = [
         'taxonomy' => $base_tax['taxonomy'],
         'field'    => 'term_id',
         'terms'    => $base_tax['terms'],
         'operator' => 'IN',
-      ]);
+      ];
+      if (($base_tax['taxonomy'] ?? '') === 'nationalnost_tax') {
+        $base_tax_clause['include_children'] = false;
+      }
+      array_unshift($tax_query, $base_tax_clause);
     }
 
     // --- ESCORT ---

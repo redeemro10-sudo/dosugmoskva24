@@ -97,12 +97,16 @@ $args = [
     'ignore_sticky_posts' => true,
 ];
 if (!empty($base_tax)) {
-    $args['tax_query'] = [[
+    $base_tax_clause = [
         'taxonomy' => $base_tax['taxonomy'],
         'field'    => 'term_id',
         'terms'    => array_map('intval', (array)$base_tax['terms']),
         'operator' => 'IN',
-    ]];
+    ];
+    if (($base_tax['taxonomy'] ?? '') === 'nationalnost_tax') {
+        $base_tax_clause['include_children'] = false;
+    }
+    $args['tax_query'] = [$base_tax_clause];
 }
 $ids = get_posts($args);
 
@@ -615,12 +619,16 @@ if ($is_metro_context) {
                     ]],
                 ];
                 if ($taxonomy !== '' && $term_id > 0) {
-                    $args['tax_query'] = [[
+                    $tax_clause = [
                         'taxonomy' => $taxonomy,
                         'field' => 'term_id',
                         'terms' => [$term_id],
                         'operator' => 'IN',
-                    ]];
+                    ];
+                    if ($taxonomy === 'nationalnost_tax') {
+                        $tax_clause['include_children'] = false;
+                    }
+                    $args['tax_query'] = [$tax_clause];
                 }
 
                 $q = new WP_Query($args);

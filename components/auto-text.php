@@ -62,18 +62,23 @@ if (!function_exists('dosugmoskva24_auto_text_count_models')) {
             return isset($count_obj->publish) ? (int) $count_obj->publish : 0;
         }
 
+        $tax_clause = [
+            'taxonomy' => (string) $base_tax['taxonomy'],
+            'field'    => 'term_id',
+            'terms'    => array_map('intval', (array) $base_tax['terms']),
+            'operator' => 'IN',
+        ];
+        if (((string) $base_tax['taxonomy']) === 'nationalnost_tax') {
+            $tax_clause['include_children'] = false;
+        }
+
         $q = new WP_Query([
             'post_type'      => 'models',
             'post_status'    => 'publish',
             'posts_per_page' => 1,
             'fields'         => 'ids',
             'no_found_rows'  => false,
-            'tax_query'      => [[
-                'taxonomy' => (string) $base_tax['taxonomy'],
-                'field'    => 'term_id',
-                'terms'    => array_map('intval', (array) $base_tax['terms']),
-                'operator' => 'IN',
-            ]],
+            'tax_query'      => [$tax_clause],
         ]);
 
         $count = (int) $q->found_posts;
@@ -333,6 +338,16 @@ if (!function_exists('dosugmoskva24_auto_text_get_model_ids_by_terms')) {
             return [];
         }
 
+        $tax_clause = [
+            'taxonomy' => $taxonomy,
+            'field'    => 'term_id',
+            'terms'    => $term_ids,
+            'operator' => 'IN',
+        ];
+        if ($taxonomy === 'nationalnost_tax') {
+            $tax_clause['include_children'] = false;
+        }
+
         $ids = get_posts([
             'post_type'           => 'models',
             'post_status'         => 'publish',
@@ -340,12 +355,7 @@ if (!function_exists('dosugmoskva24_auto_text_get_model_ids_by_terms')) {
             'fields'              => 'ids',
             'no_found_rows'       => true,
             'ignore_sticky_posts' => true,
-            'tax_query'           => [[
-                'taxonomy' => $taxonomy,
-                'field'    => 'term_id',
-                'terms'    => $term_ids,
-                'operator' => 'IN',
-            ]],
+            'tax_query'           => [$tax_clause],
         ]);
 
         return array_values(array_unique(array_filter(array_map('intval', (array) $ids))));
