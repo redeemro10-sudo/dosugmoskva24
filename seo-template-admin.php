@@ -22,29 +22,49 @@ if (!function_exists('dosugmoskva24_seo_template_defaults')) {
                 'metro' => [
                     'h1' => 'Проститутки у метро {station_name}',
                     'h2' => 'Анкеты проституток у метро {station_name}',
-                    'title' => 'Проститутки {station_name} - {verb} {noun_acc} у метро {station_name} | {count} {count_word}',
+                    'title' => 'Проститутки {station_name} - {verb} {noun_acc} у метро {station_name}',
                     'description' => 'Проститутки у станции метро {station_name}, {verb} проститутку от {price} рублей с выездом или приемом у себя 24/7',
                 ],
                 'rajon' => [
                     'h1' => 'Проститутки район {district_name}',
                     'h2' => 'Анкеты проституток в районе {district_name}',
-                    'title' => 'Проститутки {district_name} - {verb} {noun_acc} в районе {district_name} 24/7 | доступно {count} {count_word}',
+                    'title' => 'Проститутки {district_name} - {verb} {noun_acc} в районе {district_name} 24/7',
                     'description' => 'Проститутки в районе {district_name} | {verb} от {price} рублей за час, проверенные анкеты {noun_gen} в районе {district_name}',
                 ],
                 'nationality' => [
                     'h1' => 'Проститутки {nationality_name} в Москве',
                     'h2' => 'Анкеты проституток {nationality_name_gen}',
                     'title' => 'Проститутки {nationality_name} Москвы - {verb} {noun_acc} {nationality_name_acc} от {price} рублей',
-                    'description' => '{verb} {nationality_name_acc} в Москве, {count} {count_word} доступно | анкеты проституток {nationality_name_gen} с проверенными фото | выезд прием 24/7',
+                    'description' => '{verb} {nationality_name_acc} в Москве | анкеты проституток {nationality_name_gen} с проверенными фото | выезд прием 24/7',
                 ],
                 'uslugi' => [
                     'h1' => 'Проститутки с услугой {service_name} в Москве',
                     'h2' => 'Анкеты проституток с услугой {service_name}',
                     'title' => 'Проститутки для {service_name_gen} в Москве, {verb} {noun_acc} для услуги {service_name} в Москве 24/7',
-                    'description' => '{service_name} в Москве {count} проверенных {count_word} с выездом и приемом у себя, лучшие {noun_nom} для {service_name_gen} в Москве от {price} рублей за час',
+                    'description' => '{service_name} в Москве с выездом и приемом у себя, лучшие {noun_nom} для {service_name_gen} в Москве от {price} рублей за час',
                 ],
             ],
         ];
+    }
+}
+
+if (!function_exists('dosugmoskva24_seo_template_strip_count_from_meta_template')) {
+    function dosugmoskva24_seo_template_strip_count_from_meta_template(string $field, string $template): string
+    {
+        if (!in_array($field, ['title', 'description'], true)) {
+            return $template;
+        }
+
+        $template = preg_replace('~\s*\|\s*\{count\}\s*\{count_word\}~u', '', $template);
+        $template = preg_replace('~\s*\|\s*доступно\s*\{count\}\s*\{count_word\}~u', '', $template);
+        $template = preg_replace('~,\s*\{count\}\s*\{count_word\}\s*доступно~u', '', $template);
+        $template = preg_replace('~\{count\}\s*проверенных\s*\{count_word\}\s*~u', '', $template);
+        $template = str_replace(['{count}', '{count_word}'], '', $template);
+        $template = preg_replace('~\s{2,}~u', ' ', (string) $template);
+        $template = preg_replace('~\s+\|~u', ' |', (string) $template);
+        $template = preg_replace('~\|\s*\|~u', '|', (string) $template);
+
+        return trim((string) $template, " \t\n\r\0\x0B|,");
     }
 }
 
@@ -136,7 +156,10 @@ if (!function_exists('dosugmoskva24_seo_template_settings')) {
                 }
                 foreach ($fields as $field => $value) {
                     if (isset($saved['templates'][$context][$field]) && is_string($saved['templates'][$context][$field])) {
-                        $settings['templates'][$context][$field] = $saved['templates'][$context][$field];
+                        $settings['templates'][$context][$field] = dosugmoskva24_seo_template_strip_count_from_meta_template(
+                            $field,
+                            $saved['templates'][$context][$field]
+                        );
                     }
                 }
             }
@@ -228,7 +251,10 @@ if (!function_exists('dosugmoskva24_seo_template_sanitize')) {
         foreach ($defaults['templates'] as $context => $fields) {
             $output['templates'][$context] = [];
             foreach ($fields as $field => $default_value) {
-                $output['templates'][$context][$field] = sanitize_textarea_field((string) ($input['templates'][$context][$field] ?? $default_value));
+                $output['templates'][$context][$field] = dosugmoskva24_seo_template_strip_count_from_meta_template(
+                    $field,
+                    sanitize_textarea_field((string) ($input['templates'][$context][$field] ?? $default_value))
+                );
             }
         }
 
@@ -240,10 +266,10 @@ if (!function_exists('dosugmoskva24_seo_template_token_help')) {
     function dosugmoskva24_seo_template_token_help(string $context): string
     {
         $map = [
-            'metro' => '{station_name}, {name}, {verb}, {noun_acc}, {noun_gen}, {noun_nom}, {count}, {count_word}, {price}',
-            'rajon' => '{district_name}, {name}, {verb}, {noun_acc}, {noun_gen}, {noun_nom}, {count}, {count_word}, {price}',
-            'nationality' => '{nationality_name}, {name}, {nationality_name_acc}, {nationality_name_gen}, {verb}, {noun_acc}, {noun_gen}, {noun_nom}, {count}, {count_word}, {price}',
-            'uslugi' => '{service_name}, {name}, {service_name_gen}, {verb}, {noun_acc}, {noun_gen}, {noun_nom}, {count}, {count_word}, {price}',
+            'metro' => '{station_name}, {name}, {verb}, {noun_acc}, {noun_gen}, {noun_nom}, {price}',
+            'rajon' => '{district_name}, {name}, {verb}, {noun_acc}, {noun_gen}, {noun_nom}, {price}',
+            'nationality' => '{nationality_name}, {name}, {nationality_name_acc}, {nationality_name_gen}, {verb}, {noun_acc}, {noun_gen}, {noun_nom}, {price}',
+            'uslugi' => '{service_name}, {name}, {service_name_gen}, {verb}, {noun_acc}, {noun_gen}, {noun_nom}, {price}',
         ];
 
         return $map[$context] ?? '';

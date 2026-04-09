@@ -130,6 +130,19 @@ function _seo_trim_170(string $s): string
     return $s;
 }
 
+function _seo_strip_model_count_mentions(string $s): string
+{
+    $s = str_replace(['{count}', '{count_word}'], '', $s);
+    $s = preg_replace('~\s*\|\s*\d+\s+(?:анкета|анкеты|анкет)\b~u', '', $s);
+    $s = preg_replace('~\s*\|\s*доступно\s+\d+\s+(?:анкета|анкеты|анкет)\b~u', '', $s);
+    $s = preg_replace('~,\s*\d+\s+(?:анкета|анкеты|анкет)\s+доступно~u', '', $s);
+    $s = preg_replace('~\b\d+\s+проверенных\s+(?:анкета|анкеты|анкет)\b\s*~u', '', $s);
+    $s = preg_replace('~\s{2,}~u', ' ', (string) $s);
+    $s = preg_replace('~\s+\|~u', ' |', (string) $s);
+    $s = preg_replace('~\|\s*\|~u', '|', (string) $s);
+    return trim((string) $s, " \t\n\r\0\x0B|,");
+}
+
 /** Взять первые 170 символов из HTML ПОСЛЕ первого </h1> */
 function _seo_take_after_h1_170(string $html): string
 {
@@ -610,9 +623,9 @@ function _seo_build_landing_title_by_kind(string $kind, string $cat_name, string
         $count   = (int) ($extra['count'] ?? 0);
         $phrase  = _seo_random_phrase_pack($term_id);
         $template = function_exists('dosugmoskva24_seo_template_get_string')
-            ? dosugmoskva24_seo_template_get_string('metro', 'title', 'Проститутки {station_name} - {verb} {noun_acc} у метро {station_name} | {count} {count_word}')
-            : 'Проститутки {station_name} - {verb} {noun_acc} у метро {station_name} | {count} {count_word}';
-        return function_exists('dosugmoskva24_seo_template_render')
+            ? dosugmoskva24_seo_template_get_string('metro', 'title', 'Проститутки {station_name} - {verb} {noun_acc} у метро {station_name}')
+            : 'Проститутки {station_name} - {verb} {noun_acc} у метро {station_name}';
+        $result = function_exists('dosugmoskva24_seo_template_render')
             ? dosugmoskva24_seo_template_render($template, [
                 'name' => $cat_name,
                 'station_name' => $cat_name,
@@ -624,7 +637,8 @@ function _seo_build_landing_title_by_kind(string $kind, string $cat_name, string
                 'count_word' => _seo_plural_anket($count),
                 'price' => $price_txt,
             ])
-            : "Проститутки {$cat_name} - {$phrase['verb']} {$phrase['noun_acc']} у метро {$cat_name} | {$count} " . _seo_plural_anket($count);
+            : "Проститутки {$cat_name} - {$phrase['verb']} {$phrase['noun_acc']} у метро {$cat_name}";
+        return _seo_strip_model_count_mentions($result);
     }
 
     if ($kind === 'rajon') {
@@ -632,9 +646,9 @@ function _seo_build_landing_title_by_kind(string $kind, string $cat_name, string
         $count   = (int) ($extra['count'] ?? 0);
         $phrase  = _seo_random_phrase_pack($term_id);
         $template = function_exists('dosugmoskva24_seo_template_get_string')
-            ? dosugmoskva24_seo_template_get_string('rajon', 'title', 'Проститутки {district_name} - {verb} {noun_acc} в районе {district_name} 24/7 | доступно {count} {count_word}')
-            : 'Проститутки {district_name} - {verb} {noun_acc} в районе {district_name} 24/7 | доступно {count} {count_word}';
-        return function_exists('dosugmoskva24_seo_template_render')
+            ? dosugmoskva24_seo_template_get_string('rajon', 'title', 'Проститутки {district_name} - {verb} {noun_acc} в районе {district_name} 24/7')
+            : 'Проститутки {district_name} - {verb} {noun_acc} в районе {district_name} 24/7';
+        $result = function_exists('dosugmoskva24_seo_template_render')
             ? dosugmoskva24_seo_template_render($template, [
                 'name' => $cat_name,
                 'district_name' => $cat_name,
@@ -646,7 +660,8 @@ function _seo_build_landing_title_by_kind(string $kind, string $cat_name, string
                 'count_word' => _seo_plural_anket($count),
                 'price' => $price_txt,
             ])
-            : "Проститутки {$cat_name} - {$phrase['verb']} {$phrase['noun_acc']} в районе {$cat_name} 24/7 | доступно {$count} " . _seo_plural_anket($count);
+            : "Проститутки {$cat_name} - {$phrase['verb']} {$phrase['noun_acc']} в районе {$cat_name} 24/7";
+        return _seo_strip_model_count_mentions($result);
     }
 
     if ($kind === 'uslugi') {
@@ -765,9 +780,9 @@ function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array 
         $phrase = _seo_random_phrase_pack($term_id);
         $usl_gen = _seo_inflect_usluga_gen($cat_name);
         $template = function_exists('dosugmoskva24_seo_template_get_string')
-            ? dosugmoskva24_seo_template_get_string('uslugi', 'description', '{service_name} в Москве {count} проверенных {count_word} с выездом и приемом у себя, лучшие {noun_nom} для {service_name_gen} в Москве от {price} рублей за час')
-            : '{service_name} в Москве {count} проверенных {count_word} с выездом и приемом у себя, лучшие {noun_nom} для {service_name_gen} в Москве от {price} рублей за час';
-        return function_exists('dosugmoskva24_seo_template_render')
+            ? dosugmoskva24_seo_template_get_string('uslugi', 'description', '{service_name} в Москве с выездом и приемом у себя, лучшие {noun_nom} для {service_name_gen} в Москве от {price} рублей за час')
+            : '{service_name} в Москве с выездом и приемом у себя, лучшие {noun_nom} для {service_name_gen} в Москве от {price} рублей за час';
+        $result = function_exists('dosugmoskva24_seo_template_render')
             ? dosugmoskva24_seo_template_render($template, [
                 'name' => $cat_name,
                 'service_name' => $cat_name,
@@ -780,7 +795,8 @@ function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array 
                 'count_word' => _seo_plural_anket($count),
                 'price' => $price_txt,
             ])
-            : "{$cat_name} в Москве {$count} проверенных " . _seo_plural_anket($count) . " с выездом и приемом у себя, лучшие {$phrase['noun_nom']} для {$usl_gen} в Москве от {$price_txt} рублей за час";
+            : "{$cat_name} в Москве с выездом и приемом у себя, лучшие {$phrase['noun_nom']} для {$usl_gen} в Москве от {$price_txt} рублей за час";
+        return _seo_strip_model_count_mentions($result);
     }
 
     if ($kind === 'appearance') {
@@ -793,9 +809,9 @@ function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array 
         $phrase = _seo_random_phrase_pack($term_id);
         $nat_gen = _seo_inflect_nationality_gen($cat_name);
         $template = function_exists('dosugmoskva24_seo_template_get_string')
-            ? dosugmoskva24_seo_template_get_string('nationality', 'description', '{verb} {nationality_name_acc} в Москве, {count} {count_word} доступно | анкеты проституток {nationality_name_gen} с проверенными фото | выезд прием 24/7')
-            : '{verb} {nationality_name_acc} в Москве, {count} {count_word} доступно | анкеты проституток {nationality_name_gen} с проверенными фото | выезд прием 24/7';
-        return function_exists('dosugmoskva24_seo_template_render')
+            ? dosugmoskva24_seo_template_get_string('nationality', 'description', '{verb} {nationality_name_acc} в Москве | анкеты проституток {nationality_name_gen} с проверенными фото | выезд прием 24/7')
+            : '{verb} {nationality_name_acc} в Москве | анкеты проституток {nationality_name_gen} с проверенными фото | выезд прием 24/7';
+        $result = function_exists('dosugmoskva24_seo_template_render')
             ? dosugmoskva24_seo_template_render($template, [
                 'name' => $cat_name,
                 'nationality_name' => $cat_name,
@@ -809,7 +825,8 @@ function _seo_build_landing_descr_by_kind(string $kind, string $cat_name, array 
                 'count_word' => _seo_plural_anket($count),
                 'price' => (string) ($extra['price_txt'] ?? ''),
             ])
-            : "{$phrase['verb']} {$nat_gen} в Москве, {$count} " . _seo_plural_anket($count) . " доступно | анкеты проституток {$nat_gen} с проверенными фото | выезд прием 24/7";
+            : "{$phrase['verb']} {$nat_gen} в Москве | анкеты проституток {$nat_gen} с проверенными фото | выезд прием 24/7";
+        return _seo_strip_model_count_mentions($result);
     }
 
     if ($kind === 'price') {
