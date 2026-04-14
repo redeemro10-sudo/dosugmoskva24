@@ -242,6 +242,47 @@ function _seo_resolve_linked_landing_post_id(string $taxonomy, string $slug): in
     return (int) $linked_post->ID;
 }
 
+function _seo_current_request_slug(array $ctx): string
+{
+    $slug = sanitize_title((string) ($ctx['slug'] ?? ''));
+    if ($slug !== '') {
+        return $slug;
+    }
+
+    $obj = $ctx['obj'] ?? null;
+    if ($obj instanceof WP_Term && !empty($obj->slug)) {
+        return sanitize_title((string) $obj->slug);
+    }
+
+    $pagename = sanitize_title((string) get_query_var('pagename'));
+    if ($pagename !== '') {
+        return $pagename;
+    }
+
+    $request_path = trim((string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH), '/');
+    if ($request_path === '') {
+        return '';
+    }
+
+    $segments = explode('/', $request_path);
+    return sanitize_title((string) end($segments));
+}
+
+function _seo_resolve_special_price_manual_post_id(array $ctx): int
+{
+    $slug = _seo_current_request_slug($ctx);
+    if (!_seo_is_special_price_slug($slug)) {
+        return 0;
+    }
+
+    $post_id = (int) get_query_var('landing_source_post_id');
+    if ($post_id > 0) {
+        return $post_id;
+    }
+
+    return _seo_resolve_linked_landing_post_id('price_tax', $slug);
+}
+
 function _seo_resolve_landing_term(array $ctx, string $taxonomy)
 {
     $base_tax = get_query_var('base_tax');
@@ -969,6 +1010,13 @@ function _seo_build_title(array $ctx): string
     $site = $ctx['site'];
     $pt   = $ctx['post_type'];
     $slug = $ctx['slug'];
+    $special_price_post_id = _seo_resolve_special_price_manual_post_id($ctx);
+    if ($special_price_post_id > 0) {
+        $manual = _seo_normalize_brand_text(_seo_get_meta_str($special_price_post_id, 'title'));
+        if ($manual !== '') {
+            return _seo_decode_entities($manual);
+        }
+    }
 
     // Карта CPT -> taxonomy для посадочных страниц по термам.
     $tx_map = [
@@ -1135,6 +1183,13 @@ function _seo_build_title(array $ctx): string
 function _seo_build_descr(array $ctx): string
 {
     $pt = $ctx['post_type'];
+    $special_price_post_id = _seo_resolve_special_price_manual_post_id($ctx);
+    if ($special_price_post_id > 0) {
+        $manual = _seo_normalize_descr_text(_seo_get_meta_str($special_price_post_id, 'descr'));
+        if ($manual !== '') {
+            return _seo_trim_170($manual);
+        }
+    }
     $tx_map = [
         'metro'   => 'metro_tax',
         'rajon'   => 'rayonu_tax',
