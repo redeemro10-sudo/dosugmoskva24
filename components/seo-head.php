@@ -183,6 +183,32 @@ function _seo_find_term_by_slug(string $taxonomy, string $slug)
     return ($t && !is_wp_error($t)) ? $t : null;
 }
 
+function _seo_is_special_price_slug(string $slug): bool
+{
+    $slug = sanitize_title($slug);
+    if ($slug === '') return false;
+
+    return in_array($slug, ['deshevyye-prostitutki', 'elitnyye-prostitutki'], true);
+}
+
+function _seo_skip_generated_price_landing_meta(array $ctx, string $taxonomy, $term = null): bool
+{
+    if (empty($ctx['is_singular']) || $taxonomy !== 'price_tax') {
+        return false;
+    }
+
+    $slug = (string) ($ctx['slug'] ?? '');
+    if (_seo_is_special_price_slug($slug)) {
+        return true;
+    }
+
+    if ($term instanceof WP_Term && _seo_is_special_price_slug((string) $term->slug)) {
+        return true;
+    }
+
+    return false;
+}
+
 function _seo_resolve_landing_term(array $ctx, string $taxonomy)
 {
     $base_tax = get_query_var('base_tax');
@@ -929,16 +955,18 @@ function _seo_build_title(array $ctx): string
     if ($ctx['is_singular'] && $pt && isset($tx_map[$pt]) && $ctx['id']) {
         $tax = $tx_map[$pt];
         $term = _seo_resolve_landing_term($ctx, $tax);
-        $cat_name = $term ? $term->name : get_the_title($ctx['id']);
-        $cat_name = _seo_decode_entities($cat_name);
+        if (!_seo_skip_generated_price_landing_meta($ctx, $tax, $term)) {
+            $cat_name = $term ? $term->name : get_the_title($ctx['id']);
+            $cat_name = _seo_decode_entities($cat_name);
 
-        $price_num = _seo_min_price_num_by_term($term, $tax);
-        $price_txt = _seo_format_meta_price($price_num);
-        $kind = _seo_landing_kind_by_taxonomy($tax);
-        if ($kind !== '') {
-            $extra = _seo_prepare_landing_extra($term, $tax, $kind);
-            $built = _seo_build_landing_title_by_kind($kind, $cat_name, $price_txt, $extra);
-            if ($built !== '') return $built;
+            $price_num = _seo_min_price_num_by_term($term, $tax);
+            $price_txt = _seo_format_meta_price($price_num);
+            $kind = _seo_landing_kind_by_taxonomy($tax);
+            if ($kind !== '') {
+                $extra = _seo_prepare_landing_extra($term, $tax, $kind);
+                $built = _seo_build_landing_title_by_kind($kind, $cat_name, $price_txt, $extra);
+                if ($built !== '') return $built;
+            }
         }
     }
 
@@ -964,12 +992,14 @@ function _seo_build_title(array $ctx): string
         $tax = (string) $base_tax_landing['taxonomy'];
         $kind = (string) $base_tax_landing['kind'];
         $term = $base_tax_landing['term'];
-        $cat_name = (string) $base_tax_landing['name'];
-        $price_num = _seo_min_price_num_by_term($term, $tax);
-        $price_txt = _seo_format_meta_price($price_num);
-        $extra = _seo_prepare_landing_extra($term, $tax, $kind);
-        $built = _seo_build_landing_title_by_kind($kind, $cat_name, $price_txt, $extra);
-        if ($built !== '') return $built;
+        if (!_seo_skip_generated_price_landing_meta($ctx, $tax, $term)) {
+            $cat_name = (string) $base_tax_landing['name'];
+            $price_num = _seo_min_price_num_by_term($term, $tax);
+            $price_txt = _seo_format_meta_price($price_num);
+            $extra = _seo_prepare_landing_extra($term, $tax, $kind);
+            $built = _seo_build_landing_title_by_kind($kind, $cat_name, $price_txt, $extra);
+            if ($built !== '') return $built;
+        }
     }
 
     // Страница анкеты models
@@ -1078,11 +1108,13 @@ function _seo_build_descr(array $ctx): string
 
         $tax = $tx_map[$pt];
         $term = _seo_resolve_landing_term($ctx, $tax);
-        $cat_name = $term ? _seo_decode_entities((string) $term->name) : _seo_decode_entities(get_the_title($ctx['id']));
-        $kind = _seo_landing_kind_by_taxonomy($tax);
-        if ($kind !== '') {
-            $extra = _seo_prepare_landing_extra($term, $tax, $kind);
-            return _seo_trim_170(_seo_build_landing_descr_by_kind($kind, $cat_name, $extra));
+        if (!_seo_skip_generated_price_landing_meta($ctx, $tax, $term)) {
+            $cat_name = $term ? _seo_decode_entities((string) $term->name) : _seo_decode_entities(get_the_title($ctx['id']));
+            $kind = _seo_landing_kind_by_taxonomy($tax);
+            if ($kind !== '') {
+                $extra = _seo_prepare_landing_extra($term, $tax, $kind);
+                return _seo_trim_170(_seo_build_landing_descr_by_kind($kind, $cat_name, $extra));
+            }
         }
     }
 
@@ -1103,9 +1135,11 @@ function _seo_build_descr(array $ctx): string
         $tax = (string) $base_tax_landing['taxonomy'];
         $kind = (string) $base_tax_landing['kind'];
         $term = $base_tax_landing['term'];
-        $cat_name = (string) $base_tax_landing['name'];
-        $extra = _seo_prepare_landing_extra($term, $tax, $kind);
-        return _seo_trim_170(_seo_build_landing_descr_by_kind($kind, $cat_name, $extra));
+        if (!_seo_skip_generated_price_landing_meta($ctx, $tax, $term)) {
+            $cat_name = (string) $base_tax_landing['name'];
+            $extra = _seo_prepare_landing_extra($term, $tax, $kind);
+            return _seo_trim_170(_seo_build_landing_descr_by_kind($kind, $cat_name, $extra));
+        }
     }
 
     // models: ACF description
