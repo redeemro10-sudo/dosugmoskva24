@@ -209,6 +209,39 @@ function _seo_skip_generated_price_landing_meta(array $ctx, string $taxonomy, $t
     return false;
 }
 
+function _seo_resolve_linked_landing_post_id(string $taxonomy, string $slug): int
+{
+    $taxonomy = trim($taxonomy);
+    $slug = sanitize_title($slug);
+    if ($taxonomy === '' || $slug === '') {
+        return 0;
+    }
+
+    $tax_to_post_type = [
+        'uslugi_tax'       => 'uslugi',
+        'price_tax'        => 'tsena',
+        'vozrast_tax'      => 'vozrast',
+        'nationalnost_tax' => 'nacionalnost',
+        'rayonu_tax'       => 'rajon',
+        'metro_tax'        => 'metro',
+        'rost_tax'         => 'rost',
+        'grud_tax'         => 'grud',
+        'ves_tax'          => 'ves',
+        'cvet-volos_tax'   => 'tsvet-volos',
+    ];
+
+    if (empty($tax_to_post_type[$taxonomy])) {
+        return 0;
+    }
+
+    $linked_post = get_page_by_path($slug, OBJECT, $tax_to_post_type[$taxonomy]);
+    if (!($linked_post instanceof WP_Post) || empty($linked_post->ID)) {
+        return 0;
+    }
+
+    return (int) $linked_post->ID;
+}
+
 function _seo_resolve_landing_term(array $ctx, string $taxonomy)
 {
     $base_tax = get_query_var('base_tax');
@@ -975,6 +1008,20 @@ function _seo_build_title(array $ctx): string
         $qo = get_queried_object();
         if ($qo instanceof WP_Term && !empty($qo->taxonomy)) {
             $tax = (string) $qo->taxonomy;
+            if ($tax === 'price_tax' && _seo_is_special_price_slug((string) $qo->slug)) {
+                $linked_post_id = _seo_resolve_linked_landing_post_id($tax, (string) $qo->slug);
+                if ($linked_post_id > 0) {
+                    $manual = _seo_normalize_brand_text(_seo_get_meta_str($linked_post_id, 'title'));
+                    if ($manual !== '') {
+                        return _seo_decode_entities($manual);
+                    }
+
+                    $linked_title = _seo_decode_entities(_seo_normalize_brand_text(get_the_title($linked_post_id)));
+                    if ($linked_title !== '') {
+                        return $linked_title;
+                    }
+                }
+            }
             $kind = _seo_landing_kind_by_taxonomy($tax);
             if ($kind !== '') {
                 $cat_name = _seo_decode_entities((string) $qo->name);
@@ -1121,10 +1168,25 @@ function _seo_build_descr(array $ctx): string
     if (is_tax()) {
         $qo = get_queried_object();
         if ($qo instanceof WP_Term && !empty($qo->taxonomy)) {
-            $kind = _seo_landing_kind_by_taxonomy((string) $qo->taxonomy);
+            $tax = (string) $qo->taxonomy;
+            if ($tax === 'price_tax' && _seo_is_special_price_slug((string) $qo->slug)) {
+                $linked_post_id = _seo_resolve_linked_landing_post_id($tax, (string) $qo->slug);
+                if ($linked_post_id > 0) {
+                    $d = _seo_normalize_descr_text(_seo_get_meta_str($linked_post_id, 'descr'));
+                    if ($d !== '') {
+                        return _seo_trim_170($d);
+                    }
+
+                    $raw = get_post_field('post_excerpt', $linked_post_id) ?: get_post_field('post_content', $linked_post_id);
+                    if ($raw) {
+                        return _seo_trim_170($raw);
+                    }
+                }
+            }
+            $kind = _seo_landing_kind_by_taxonomy($tax);
             if ($kind !== '') {
                 $cat_name = _seo_decode_entities((string) $qo->name);
-                $extra = _seo_prepare_landing_extra($qo, (string) $qo->taxonomy, $kind);
+                $extra = _seo_prepare_landing_extra($qo, $tax, $kind);
                 return _seo_trim_170(_seo_build_landing_descr_by_kind($kind, $cat_name, $extra));
             }
         }
